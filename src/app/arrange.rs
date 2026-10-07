@@ -60,17 +60,29 @@ mod tests {
             .into_iter()
             .map(String::from)
             .collect();
-        let bounds = Rect { x: 0, y: 0, w: 1920, h: 1080 };
+        let bounds = Rect {
+            x: 0,
+            y: 0,
+            w: 1920,
+            h: 1080,
+        };
         let out = arrange_grid(&ids, bounds, (240, 200), (24, 48), 16);
 
         assert_eq!(out.len(), 4);
-        assert_eq!(out[0].1, Rect { x: 24, y: 48, w: 240, h: 200 });
+        assert_eq!(
+            out[0].1,
+            Rect {
+                x: 24,
+                y: 48,
+                w: 240,
+                h: 200
+            }
+        );
         // second note stacks below the first (same column)
         assert_eq!(out[1].1.x, 24, "second note is in same column");
         assert!(out[1].1.y > out[0].1.y, "second note is below first");
         // every slot is unique (no overlap)
-        let slots: std::collections::HashSet<_> =
-            out.iter().map(|(_, r)| (r.x, r.y)).collect();
+        let slots: std::collections::HashSet<_> = out.iter().map(|(_, r)| (r.x, r.y)).collect();
         assert_eq!(slots.len(), 4, "no two notes share the same slot");
     }
 
@@ -79,7 +91,12 @@ mod tests {
         // With bounds h=300, cell_h=200, margin_y=0, gap=0: per_col=1
         // So every note gets its own column.
         let ids: Vec<NoteId> = vec!["a", "b"].into_iter().map(String::from).collect();
-        let bounds = Rect { x: 0, y: 0, w: 1920, h: 300 };
+        let bounds = Rect {
+            x: 0,
+            y: 0,
+            w: 1920,
+            h: 300,
+        };
         let out = arrange_grid(&ids, bounds, (240, 200), (0, 0), 0);
         // per_col = (300 + 0) / (200 + 0) = 1
         assert_eq!(out[0].1.x, 0, "first note in col 0");
@@ -89,14 +106,39 @@ mod tests {
 
     #[test]
     fn arrange_grid_empty_ids_returns_empty() {
-        let out = arrange_grid(&[], Rect { x: 0, y: 0, w: 1920, h: 1080 }, (240, 200), (24, 48), 16);
+        let out = arrange_grid(
+            &[],
+            Rect {
+                x: 0,
+                y: 0,
+                w: 1920,
+                h: 1080,
+            },
+            (240, 200),
+            (24, 48),
+            16,
+        );
         assert!(out.is_empty());
     }
 
     #[test]
     fn arrange_grid_output_ids_match_input_order() {
         let ids: Vec<NoteId> = vec!["z", "m", "a"].into_iter().map(String::from).collect();
-        let out = arrange_grid(&ids, Rect { x: 0, y: 0, w: 1920, h: 1080 }, (240, 200), (0, 0), 8);
-        assert_eq!(out.iter().map(|(id, _)| id.as_str()).collect::<Vec<_>>(), vec!["z", "m", "a"]);
+        let out = arrange_grid(
+            &ids,
+            Rect {
+                x: 0,
+                y: 0,
+                w: 1920,
+                h: 1080,
+            },
+            (240, 200),
+            (0, 0),
+            8,
+        );
+        assert_eq!(
+            out.iter().map(|(id, _)| id.as_str()).collect::<Vec<_>>(),
+            vec!["z", "m", "a"]
+        );
     }
 }

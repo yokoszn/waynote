@@ -63,6 +63,15 @@ impl Paths {
         self.state.join("waynote").join("layout.toml")
     }
 
+    /// Path to the persistent cross-object scene graph.
+    ///
+    /// Notes remain individual Markdown files; this sidecar stores spatial
+    /// placement, groups, links, and external object references that cannot be
+    /// represented in a note's frontmatter.
+    pub fn scene_file(&self) -> PathBuf {
+        self.state.join("waynote").join("scene.json")
+    }
+
     /// Path to the app-managed runtime prefs: `<state>/waynote/runtime.toml`.
     /// Holds UI toggles (e.g. confirm-before-delete) that the app/tray change —
     /// kept OUT of the user's hand-editable config.toml.
@@ -97,13 +106,11 @@ mod tests {
 
     #[test]
     fn test_from_env_with_xdg_vars() {
-        let env = |k: &str| {
-            match k {
-                "XDG_DATA_HOME" => Some("/x/data".to_string()),
-                "XDG_STATE_HOME" => Some("/x/state".to_string()),
-                "XDG_CONFIG_HOME" => Some("/x/cfg".to_string()),
-                _ => None,
-            }
+        let env = |k: &str| match k {
+            "XDG_DATA_HOME" => Some("/x/data".to_string()),
+            "XDG_STATE_HOME" => Some("/x/state".to_string()),
+            "XDG_CONFIG_HOME" => Some("/x/cfg".to_string()),
+            _ => None,
         };
 
         let paths = Paths::from_env(env);
@@ -114,11 +121,9 @@ mod tests {
 
     #[test]
     fn test_from_env_with_home_fallback() {
-        let env = |k: &str| {
-            match k {
-                "HOME" => Some("/home/u".to_string()),
-                _ => None,
-            }
+        let env = |k: &str| match k {
+            "HOME" => Some("/home/u".to_string()),
+            _ => None,
         };
 
         let paths = Paths::from_env(env);
@@ -183,7 +188,24 @@ mod tests {
         };
 
         let paths = Paths::from_env(env);
-        assert_eq!(paths.layout_file(), PathBuf::from("/x/state/waynote/layout.toml"));
+        assert_eq!(
+            paths.layout_file(),
+            PathBuf::from("/x/state/waynote/layout.toml")
+        );
+    }
+
+    #[test]
+    fn test_scene_file() {
+        let env = |k: &str| match k {
+            "XDG_STATE_HOME" => Some("/x/state".to_string()),
+            _ => None,
+        };
+
+        let paths = Paths::from_env(env);
+        assert_eq!(
+            paths.scene_file(),
+            PathBuf::from("/x/state/waynote/scene.json")
+        );
     }
 
     #[test]
@@ -194,7 +216,10 @@ mod tests {
         };
 
         let paths = Paths::from_env(env);
-        assert_eq!(paths.config_file(), PathBuf::from("/x/cfg/waynote/config.toml"));
+        assert_eq!(
+            paths.config_file(),
+            PathBuf::from("/x/cfg/waynote/config.toml")
+        );
     }
 
     #[test]

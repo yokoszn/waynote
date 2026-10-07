@@ -78,7 +78,11 @@ pub struct Controller {
 impl Controller {
     /// Build with surfaces already created. Loads config/layout and snapshots
     /// the monitors; notes are loaded by `load_notes` and placed by `present`.
-    pub fn new(manager: SurfaceManager, paths: Paths, monitors: Vec<MonitorInfo>) -> Rc<RefCell<Self>> {
+    pub fn new(
+        manager: SurfaceManager,
+        paths: Paths,
+        monitors: Vec<MonitorInfo>,
+    ) -> Rc<RefCell<Self>> {
         let config = config::load(&paths);
         let layout = layout::load(&paths);
         let confirm_delete = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(
@@ -129,7 +133,15 @@ impl Controller {
                 geometry: self.layout.get(&id).cloned(),
                 collapsed: self.layout.collapsed(&id),
             };
-            let entry = make_entry(&self.paths, saved, &self.config.default_size, i, ln.note, ln.path, ln.disk_hash);
+            let entry = make_entry(
+                &self.paths,
+                saved,
+                &self.config.default_size,
+                i,
+                ln.note,
+                ln.path,
+                ln.disk_hash,
+            );
             self.entries.insert(id, entry);
         }
 
@@ -137,8 +149,10 @@ impl Controller {
             ws.known = known;
         }
         // Seed the shared "has notes" flag (the tray reads it; it starts after this).
-        self.has_notes
-            .store(!self.entries.is_empty(), std::sync::atomic::Ordering::Relaxed);
+        self.has_notes.store(
+            !self.entries.is_empty(),
+            std::sync::atomic::Ordering::Relaxed,
+        );
         Ok(())
     }
 
@@ -222,7 +236,9 @@ impl Controller {
     /// Added or Modified: (re)read the file, then either re-render an existing
     /// note's content in place or build + place a fresh card.
     fn apply_reload(this: &Rc<RefCell<Self>>, id: &NoteId) {
-        let Some((path, note, hash)) = Self::read_note_for(this, id) else { return };
+        let Some((path, note, hash)) = Self::read_note_for(this, id) else {
+            return;
+        };
         let exists = this.borrow().entries.contains_key(id);
         if exists {
             Self::refresh_existing(this, id, path, note, hash);
@@ -313,7 +329,15 @@ impl Controller {
                 collapsed: c.layout.collapsed(&id),
             };
             let index = c.entries.len();
-            let entry = make_entry(&c.paths, saved, &c.config.default_size, index, note, path.clone(), disk_hash.clone());
+            let entry = make_entry(
+                &c.paths,
+                saved,
+                &c.config.default_size,
+                index,
+                note,
+                path.clone(),
+                disk_hash.clone(),
+            );
             c.entries.insert(id.clone(), entry);
             presenter::surface_index_for(&c, &id)
         };
@@ -521,7 +545,9 @@ impl Controller {
     /// Also ends the keyboard edit session (clear `active_editor`, restore modes
     /// and layer per Task 8).
     fn on_edit_committed(&mut self, id: &NoteId, raw: String) {
-        let Some(entry) = self.entries.get_mut(id) else { return };
+        let Some(entry) = self.entries.get_mut(id) else {
+            return;
+        };
         set_body_from_raw(&mut entry.note, &raw);
         let title = entry.note.title();
         let outcome = persist_entry(entry, now_ts());
@@ -551,8 +577,12 @@ impl Controller {
             }
             return;
         }
-        let Some(entry) = self.entries.get_mut(id) else { return };
-        let Some(new_raw) = toggled_raw(&entry.note.body, idx) else { return };
+        let Some(entry) = self.entries.get_mut(id) else {
+            return;
+        };
+        let Some(new_raw) = toggled_raw(&entry.note.body, idx) else {
+            return;
+        };
         entry.note.body = new_raw.clone();
         let outcome = persist_entry(entry, now_ts());
         rerender_later(&entry.chrome.note_view, new_raw);
@@ -566,7 +596,9 @@ impl Controller {
         if !crate::core::theme::is_note_color(&color) {
             return;
         }
-        let Some(entry) = self.entries.get_mut(id) else { return };
+        let Some(entry) = self.entries.get_mut(id) else {
+            return;
+        };
         let old = entry.note.color.clone();
         if old == color {
             return;
@@ -612,7 +644,9 @@ impl Controller {
     /// Set the conflict flag on the model AND the chrome. Returns whether it moved,
     /// so the caller can reconcile only on a real change.
     fn set_conflict(&mut self, id: &NoteId, conflict: bool) -> bool {
-        let Some(entry) = self.entries.get_mut(id) else { return false };
+        let Some(entry) = self.entries.get_mut(id) else {
+            return false;
+        };
         if entry.conflict == conflict {
             return false;
         }
@@ -624,7 +658,9 @@ impl Controller {
     /// Record an own-write hash + refresh the `known` baseline for `id` so the
     /// background watcher does not treat the app's own save as an external change.
     fn record_own_write(&mut self, id: &NoteId, hash: &str) {
-        let Ok(mut ws) = self.watch_state.lock() else { return };
+        let Ok(mut ws) = self.watch_state.lock() else {
+            return;
+        };
         ws.own_writes.insert(hash.to_string());
         if let Some(k) = ws.known.iter_mut().find(|k| &k.id == id) {
             k.hash = hash.to_string();
@@ -672,11 +708,7 @@ fn install_event_handlers(this: &Rc<RefCell<Controller>>) {
 /// is deferred to an idle tick — like the `NoteEvent` handler — so no Controller
 /// borrow is held when the cross-surface re-sync reparents this note's widget
 /// (which contains the very button being clicked). Captures `Weak<RefCell<Controller>>`.
-fn wire_layer_button(
-    button: &gtk::Button,
-    weak: std::rc::Weak<RefCell<Controller>>,
-    id: NoteId,
-) {
+fn wire_layer_button(button: &gtk::Button, weak: std::rc::Weak<RefCell<Controller>>, id: NoteId) {
     use gtk::prelude::ButtonExt;
     button.connect_clicked(move |_| {
         let (weak, id) = (weak.clone(), id.clone());
@@ -693,11 +725,7 @@ fn wire_layer_button(
 }
 
 /// Wire the per-note lock button: click toggles the note's content read-only flag.
-fn wire_lock_button(
-    button: &gtk::Button,
-    weak: std::rc::Weak<RefCell<Controller>>,
-    id: NoteId,
-) {
+fn wire_lock_button(button: &gtk::Button, weak: std::rc::Weak<RefCell<Controller>>, id: NoteId) {
     use gtk::prelude::ButtonExt;
     button.connect_clicked(move |_| {
         let (weak, id) = (weak.clone(), id.clone());
@@ -709,11 +737,7 @@ fn wire_lock_button(
 }
 
 /// Wire the per-note pin button: click toggles the note's anchored (`pinned`) flag.
-fn wire_pin_button(
-    button: &gtk::Button,
-    weak: std::rc::Weak<RefCell<Controller>>,
-    id: NoteId,
-) {
+fn wire_pin_button(button: &gtk::Button, weak: std::rc::Weak<RefCell<Controller>>, id: NoteId) {
     use gtk::prelude::ButtonExt;
     button.connect_clicked(move |_| {
         let (weak, id) = (weak.clone(), id.clone());
@@ -726,11 +750,7 @@ fn wire_pin_button(
 
 /// Wire the per-note copy button: click copies the note's raw markdown to the
 /// clipboard. Read-only (no mutation / no widget destruction), so it runs directly.
-fn wire_copy_button(
-    button: &gtk::Button,
-    weak: std::rc::Weak<RefCell<Controller>>,
-    id: NoteId,
-) {
+fn wire_copy_button(button: &gtk::Button, weak: std::rc::Weak<RefCell<Controller>>, id: NoteId) {
     use gtk::prelude::ButtonExt;
     button.connect_clicked(move |_| {
         if let Some(ctrl) = weak.upgrade() {
@@ -819,11 +839,7 @@ fn populate_monitor_menu(
 /// an idle tick (like the other header buttons) because `delete_to_trash` destroys
 /// this note's widget subtree — which contains the very popover button being
 /// clicked — so it must not run while that click handler is still on the stack.
-fn wire_delete_button(
-    button: &gtk::Button,
-    weak: std::rc::Weak<RefCell<Controller>>,
-    id: NoteId,
-) {
+fn wire_delete_button(button: &gtk::Button, weak: std::rc::Weak<RefCell<Controller>>, id: NoteId) {
     use gtk::prelude::*;
     let popover = gtk::Popover::new();
     let body = gtk::Box::new(gtk::Orientation::Vertical, 8);
@@ -863,7 +879,11 @@ fn wire_delete_button(
     button.connect_clicked(move |_| {
         let confirm_on = weak_click
             .upgrade()
-            .map(|c| c.borrow().confirm_delete.load(std::sync::atomic::Ordering::Relaxed))
+            .map(|c| {
+                c.borrow()
+                    .confirm_delete
+                    .load(std::sync::atomic::Ordering::Relaxed)
+            })
             .unwrap_or(true);
         if confirm_on {
             if let Some(p) = pop.upgrade() {
@@ -894,7 +914,10 @@ fn wire_delete_button(
         if let Some(p) = pop.upgrade() {
             p.popdown();
         }
-        let stop_asking = dont_ask_weak.upgrade().map(|c| c.is_active()).unwrap_or(false);
+        let stop_asking = dont_ask_weak
+            .upgrade()
+            .map(|c| c.is_active())
+            .unwrap_or(false);
         let (weak, id) = (weak.clone(), id.clone());
         glib::idle_add_local_once(move || {
             if let Some(ctrl) = weak.upgrade() {
@@ -914,7 +937,9 @@ fn wire_delete_button(
 /// `Weak<RefCell<Controller>>` — same discipline as `install_event_handlers`.
 fn install_event_handler_for(this: &Rc<RefCell<Controller>>, id: &NoteId) {
     let ctrl = this.borrow();
-    let Some(entry) = ctrl.entries.get(id) else { return };
+    let Some(entry) = ctrl.entries.get(id) else {
+        return;
+    };
     let weak = Rc::downgrade(this);
     let id = id.clone();
     let weak_handler = weak.clone();
@@ -954,7 +979,9 @@ fn install_window_esc_handlers(this: &Rc<RefCell<Controller>>) {
             if keyval != gtk::gdk::Key::Escape {
                 return glib::Propagation::Proceed;
             }
-            let Some(ctrl) = weak.upgrade() else { return glib::Propagation::Proceed };
+            let Some(ctrl) = weak.upgrade() else {
+                return glib::Propagation::Proceed;
+            };
             let active = ctrl.borrow().active_editor.clone();
             match active {
                 Some(id) => {
@@ -971,11 +998,7 @@ fn install_window_esc_handlers(this: &Rc<RefCell<Controller>>) {
 /// Locate a note's path: first from `ws.known`, then by rescanning `notes_dir`.
 /// PURE-ish (fs read only): used by `apply_change`'s reload path to resolve a
 /// changed/added note's path, and unit-tested via the watcher helpers.
-fn find_note_path(
-    ws: &WatchState,
-    notes_dir: &Path,
-    id: &NoteId,
-) -> Option<std::path::PathBuf> {
+fn find_note_path(ws: &WatchState, notes_dir: &Path, id: &NoteId) -> Option<std::path::PathBuf> {
     if let Some(k) = ws.known.iter().find(|k| &k.id == id) {
         let p = std::path::PathBuf::from(&k.path);
         if p.exists() {
@@ -1025,9 +1048,17 @@ fn make_entry(
     path: std::path::PathBuf,
     disk_hash: String,
 ) -> NoteEntry {
-    let SavedView { geometry, collapsed } = saved;
+    let SavedView {
+        geometry,
+        collapsed,
+    } = saved;
     let geometry = geometry.unwrap_or_else(|| default_geometry(default_size, fallback_index));
-    let rect = Rect { x: geometry.x, y: geometry.y, w: geometry.w, h: geometry.h };
+    let rect = Rect {
+        x: geometry.x,
+        y: geometry.y,
+        w: geometry.w,
+        h: geometry.h,
+    };
     let chrome = build_chrome(paths, &note.id, &note, rect);
     let surface_key = SurfaceKey {
         output_id: geometry.output.clone(),
@@ -1063,11 +1094,24 @@ fn content_width_for(w: i32) -> i32 {
 /// description and logical rect, and clamp the (monitor-local) x/y into the
 /// target's size so the note lands on-screen. The note's size (w/h) is unchanged.
 fn retarget_geometry_to_monitor(g: &Geometry, target: &MonitorInfo, on_screen_h: i32) -> Geometry {
-    let bounds = Rect { x: 0, y: 0, w: target.logical[2], h: target.logical[3] };
+    let bounds = Rect {
+        x: 0,
+        y: 0,
+        w: target.logical[2],
+        h: target.logical[3],
+    };
     // Clamp by what the note actually occupies (`on_screen_h`), not by `g.h`: a
     // rolled-up note is only a bar tall and must be allowed right up to the bottom
     // edge. `g.h` itself is left untouched — it is the height to restore on unroll.
-    let placed = crate::platform::geometry::clamp_into(Rect { x: g.x, y: g.y, w: g.w, h: on_screen_h }, bounds);
+    let placed = crate::platform::geometry::clamp_into(
+        Rect {
+            x: g.x,
+            y: g.y,
+            w: g.w,
+            h: on_screen_h,
+        },
+        bounds,
+    );
     Geometry {
         output: target.output_id.clone(),
         output_desc: target.description.clone(),
@@ -1116,9 +1160,18 @@ fn default_geometry(default_size: &[i32; 2], index: usize) -> Geometry {
 /// PURE: resolve a note's initial in-surface rect from saved geometry or a
 /// default cascade. `saved` is the layout entry (if any); `default_size` from
 /// config; `fallback_index` is the note's position in the load order.
-pub fn initial_rect(saved: Option<&Geometry>, default_size: [i32; 2], fallback_index: usize) -> Rect {
+pub fn initial_rect(
+    saved: Option<&Geometry>,
+    default_size: [i32; 2],
+    fallback_index: usize,
+) -> Rect {
     match saved {
-        Some(g) => Rect { x: g.x, y: g.y, w: g.w, h: g.h },
+        Some(g) => Rect {
+            x: g.x,
+            y: g.y,
+            w: g.w,
+            h: g.h,
+        },
         None => {
             let step = 28;
             let i = fallback_index as i32;
@@ -1198,8 +1251,8 @@ fn persist_entry(entry: &mut NoteEntry, ts: String) -> PersistOutcome {
         layer: effective_layer,
         ..entry.note.clone()
     };
-    let outcome = store::save_checked_to(&entry.path, &note_for_save, &base, &ts)
-        .expect("path-aware save");
+    let outcome =
+        store::save_checked_to(&entry.path, &note_for_save, &base, &ts).expect("path-aware save");
     match outcome {
         SaveOutcome::Saved(hash) => {
             entry.disk_hash = hash.clone();
@@ -1259,7 +1312,9 @@ impl render::DragResizeHandler for Controller {
         // because geometry is unchanged.
         let surf_idx = presenter::surface_index_for(self, id);
         if let Some(w) = self.views[surf_idx].get(id) {
-            self.manager.surfaces()[surf_idx].fixed.move_(w, x as f64, y as f64);
+            self.manager.surfaces()[surf_idx]
+                .fixed
+                .move_(w, x as f64, y as f64);
             // Repaint (commit) per motion. A Background / just-lifted layer-shell
             // surface is frame-throttled by the compositor, so without forcing a
             // commit the widget's new position is never displayed — the note
@@ -1353,7 +1408,9 @@ impl render::DragResizeHandler for Controller {
         // so the dragged note isn't drawn behind windows mid-gesture. We do NOT
         // touch the note's layer / surface_key / views — transient, undone on end.
         if layer == SurfaceLayer::Desktop {
-            self.manager.surfaces()[surf_idx].window.set_layer(ShellLayer::Overlay);
+            self.manager.surfaces()[surf_idx]
+                .window
+                .set_layer(ShellLayer::Overlay);
             self.lifted_surface = Some(surf_idx);
         }
         // For EVERY layer: expand the input region to the WHOLE surface for the drag.
@@ -1477,9 +1534,7 @@ fn toggle_shows_all(any_hidden: bool) -> bool {
 /// PURE: which note ids become hidden on "hide all" — every visible, non-pinned note.
 ///
 /// Already-hidden notes are skipped (idempotent). Pinned notes are always exempt.
-pub fn hideable_ids<'a>(
-    entries: impl Iterator<Item = (&'a NoteId, bool, bool)>,
-) -> Vec<NoteId> {
+pub fn hideable_ids<'a>(entries: impl Iterator<Item = (&'a NoteId, bool, bool)>) -> Vec<NoteId> {
     entries
         .filter(|(_, pinned, hidden)| !pinned && !hidden)
         .map(|(id, _, _)| id.clone())
@@ -1521,7 +1576,10 @@ fn defer_after_edit_commit(
         let c = this.borrow();
         (
             c.active_editor.as_deref() == Some(id),
-            c.entries.get(id).map(|e| e.edit_base_hash.is_some()).unwrap_or(false),
+            c.entries
+                .get(id)
+                .map(|e| e.edit_base_hash.is_some())
+                .unwrap_or(false),
         )
     };
     if !commit_pending {
@@ -1573,8 +1631,12 @@ impl Controller {
             // Measure the on-screen height BEFORE taking the mutable borrow: a
             // rolled-up note must be clamped by its bar, not by the expanded height
             // it will have again once unrolled.
-            let Some(on_screen_h) = c.on_screen_rect(id).map(|r| r.h) else { return };
-            let Some(entry) = c.entries.get_mut(id) else { return };
+            let Some(on_screen_h) = c.on_screen_rect(id).map(|r| r.h) else {
+                return;
+            };
+            let Some(entry) = c.entries.get_mut(id) else {
+                return;
+            };
             entry.geometry = retarget_geometry_to_monitor(&entry.geometry, &target, on_screen_h);
             entry.surface_key.output_id = target.output_id.clone(); // keep key in sync
             c.stage_layout(id);
@@ -1635,7 +1697,9 @@ impl Controller {
                 .collect();
             let mut moved: Vec<NoteId> = Vec::with_capacity(heights.len());
             for (id, on_screen_h) in heights {
-                let Some(entry) = c.entries.get_mut(&id) else { continue };
+                let Some(entry) = c.entries.get_mut(&id) else {
+                    continue;
+                };
                 entry.geometry =
                     retarget_geometry_to_monitor(&entry.geometry, &target, on_screen_h);
                 entry.surface_key.output_id = target.output_id.clone();
@@ -1659,7 +1723,10 @@ impl Controller {
     /// The `(index, label)` of every monitor, for the tray "Send all notes to
     /// monitor" submenu. Labels match the per-note menu (`monitor_label`).
     pub(crate) fn monitor_labels(&self) -> Vec<(usize, String)> {
-        self.monitors.iter().map(|m| (m.index, monitor_label(m))).collect()
+        self.monitors
+            .iter()
+            .map(|m| (m.index, monitor_label(m)))
+            .collect()
     }
 
     /// Clear `hidden` for every entry and re-sync all surfaces.
@@ -1679,7 +1746,11 @@ impl Controller {
     pub fn hide_all(this: &Rc<RefCell<Self>>) {
         let ids: Vec<NoteId> = {
             let c = this.borrow();
-            hideable_ids(c.entries.iter().map(|(id, e)| (id, e.note.pinned, e.hidden)))
+            hideable_ids(
+                c.entries
+                    .iter()
+                    .map(|(id, e)| (id, e.note.pinned, e.hidden)),
+            )
         };
         {
             let mut c = this.borrow_mut();
@@ -1719,7 +1790,9 @@ impl Controller {
     fn apply_toggle_pin(this: &Rc<RefCell<Self>>, id: &NoteId) {
         let outcome = {
             let mut c = this.borrow_mut();
-            let Some(entry) = c.entries.get_mut(id) else { return };
+            let Some(entry) = c.entries.get_mut(id) else {
+                return;
+            };
             entry.note.pinned = !entry.note.pinned;
             entry.chrome.set_pinned(entry.note.pinned);
             persist_entry(entry, now_ts())
@@ -1741,7 +1814,9 @@ impl Controller {
     fn apply_toggle_lock(this: &Rc<RefCell<Self>>, id: &NoteId) {
         let outcome = {
             let mut c = this.borrow_mut();
-            let Some(entry) = c.entries.get_mut(id) else { return };
+            let Some(entry) = c.entries.get_mut(id) else {
+                return;
+            };
             entry.note.locked = !entry.note.locked;
             entry.chrome.set_locked(entry.note.locked);
             persist_entry(entry, now_ts())
@@ -1765,9 +1840,13 @@ impl Controller {
         }
         let (outcome, old_color) = {
             let mut c = this.borrow_mut();
-            let Some(entry) = c.entries.get_mut(id) else { return };
+            let Some(entry) = c.entries.get_mut(id) else {
+                return;
+            };
             let old = entry.note.color.clone();
-            if old == color { return; }
+            if old == color {
+                return;
+            }
             entry.note.color = color.to_string();
             (persist_entry(entry, now_ts()), old)
         };
@@ -1814,7 +1893,8 @@ impl Controller {
     /// the tray checkmark), and persist it to `runtime.toml` (NOT config.toml).
     pub fn set_confirm_delete(this: &Rc<RefCell<Self>>, value: bool) {
         let c = this.borrow();
-        c.confirm_delete.store(value, std::sync::atomic::Ordering::Relaxed);
+        c.confirm_delete
+            .store(value, std::sync::atomic::Ordering::Relaxed);
         if let Err(e) = crate::platform::runtime_prefs::save_confirm_delete(&c.paths, value) {
             eprintln!("[waynote] save confirm_delete failed: {e}");
         }
@@ -1835,7 +1915,9 @@ impl Controller {
     pub fn delete_to_trash(this: &Rc<RefCell<Self>>, id: &NoteId) -> std::io::Result<()> {
         let (path, trash_dir) = {
             let c = this.borrow();
-            let Some(entry) = c.entries.get(id) else { return Ok(()) };
+            let Some(entry) = c.entries.get(id) else {
+                return Ok(());
+            };
             (entry.path.clone(), c.paths.trash_dir())
         };
         // Move to the app trash dir FIRST. On error, the model is left untouched.
@@ -1879,7 +1961,9 @@ impl Controller {
         let old_surf_idx = presenter::surface_index_for(&this.borrow(), id);
         let outcome = {
             let mut c = this.borrow_mut();
-            let Some(entry) = c.entries.get_mut(id) else { return };
+            let Some(entry) = c.entries.get_mut(id) else {
+                return;
+            };
             entry.note.layer = new_layer;
             entry.surface_key.layer = surface_layer_of(&entry.note.layer);
             // Reflect the new layer on the header toggle button immediately.
@@ -1930,7 +2014,9 @@ impl Controller {
         let ids: Vec<NoteId> = {
             let c = this.borrow();
             relayer_ids(
-                c.entries.iter().map(|(id, e)| (id, e.note.pinned, &e.note.layer)),
+                c.entries
+                    .iter()
+                    .map(|(id, e)| (id, e.note.pinned, &e.note.layer)),
                 &new_layer,
             )
         };
@@ -1939,7 +2025,9 @@ impl Controller {
             let is_active = active.as_ref() == Some(id);
             let outcome = {
                 let mut c = this.borrow_mut();
-                let Some(entry) = c.entries.get_mut(id) else { continue };
+                let Some(entry) = c.entries.get_mut(id) else {
+                    continue;
+                };
                 entry.note.layer = new_layer.clone();
                 entry.surface_key.layer = surface_layer_of(&entry.note.layer);
                 entry.chrome.set_layer(&entry.note.layer);
@@ -1975,7 +2063,9 @@ pub fn move_to_trash(src: &Path, trash_dir: &Path) -> std::io::Result<std::path:
 
 /// Pick a destination in `trash_dir` for `src`'s filename that does not exist yet.
 fn unique_trash_dest(trash_dir: &Path, src: &Path) -> std::path::PathBuf {
-    let name = src.file_name().unwrap_or_else(|| std::ffi::OsStr::new("note.md"));
+    let name = src
+        .file_name()
+        .unwrap_or_else(|| std::ffi::OsStr::new("note.md"));
     let candidate = trash_dir.join(name);
     if !candidate.exists() {
         return candidate;
@@ -2103,7 +2193,10 @@ fn collect_surface_ids(ctrl: &Controller, surf_idx: usize) -> Vec<NoteId> {
 /// logical rect of THAT surface's monitor (origin 0,0 since surface coordinates
 /// are monitor-local), else 1920×1080. Previously this always used the first
 /// monitor, which clamped notes on other monitors to the wrong screen.
-pub(crate) fn surface_bounds(ctrl: &Controller, surf_idx: usize) -> crate::platform::geometry::Rect {
+pub(crate) fn surface_bounds(
+    ctrl: &Controller,
+    surf_idx: usize,
+) -> crate::platform::geometry::Rect {
     let monitor = ctrl
         .manager
         .surfaces()
@@ -2118,7 +2211,12 @@ pub(crate) fn surface_bounds(ctrl: &Controller, surf_idx: usize) -> crate::platf
             w: m.logical[2],
             h: m.logical[3],
         })
-        .unwrap_or(crate::platform::geometry::Rect { x: 0, y: 0, w: 1920, h: 1080 })
+        .unwrap_or(crate::platform::geometry::Rect {
+            x: 0,
+            y: 0,
+            w: 1920,
+            h: 1080,
+        })
 }
 
 // ── Task 12: new-note construction + create_note ─────────────────────────────
@@ -2179,7 +2277,10 @@ fn cursor_monitor_index(monitors: &[MonitorInfo]) -> Option<usize> {
             return Some(m.index);
         }
     }
-    monitors.iter().find(|m| m.logical == logical).map(|m| m.index)
+    monitors
+        .iter()
+        .find(|m| m.logical == logical)
+        .map(|m| m.index)
 }
 
 impl Controller {
@@ -2233,7 +2334,10 @@ impl Controller {
             if let Ok(mut ws) = ws_arc.lock() {
                 ws.own_writes.insert(disk_hash.clone());
             }
-            c.monitors.get(monitor_idx).map(|m| m.output_id.clone()).unwrap_or_default()
+            c.monitors
+                .get(monitor_idx)
+                .map(|m| m.output_id.clone())
+                .unwrap_or_default()
         };
 
         let rect = initial_rect(None, default_size, entry_count);
@@ -2311,7 +2415,9 @@ impl Controller {
 
         let (caps, base, note_view) = {
             let c = this.borrow();
-            let Some(entry) = c.entries.get(id) else { return };
+            let Some(entry) = c.entries.get(id) else {
+                return;
+            };
             if entry.note.locked {
                 return; // content read-only
             }
@@ -2320,7 +2426,11 @@ impl Controller {
                 max_bytes: c.config.image_max_bytes,
                 downsample: c.config.image_downsample,
             };
-            (caps, c.paths.attachments_dir(id), entry.chrome.note_view.clone())
+            (
+                caps,
+                c.paths.attachments_dir(id),
+                entry.chrome.note_view.clone(),
+            )
         };
 
         let Some(display) = gtk::gdk::Display::default() else {
@@ -2331,25 +2441,22 @@ impl Controller {
         let id = id.clone();
         let this = this.clone();
 
-        clipboard.read_texture_async(
-            None::<&gtk::gio::Cancellable>,
-            move |res| {
-                let Ok(Some(texture)) = res else {
-                    eprintln!("[waynote] paste_image: clipboard has no image");
-                    return;
-                };
-                let raw = ci::texture_to_raw(&texture);
-                let ts = now_ts();
-                match ci::store_pasted_image(&raw, caps, &id, &ts, &base) {
-                    Ok(Some(snippet)) => {
-                        crate::platform::render::NoteView::insert_at_cursor(&note_view, &snippet);
-                    }
-                    Ok(None) => eprintln!("[waynote] paste_image: image rejected (over caps)"),
-                    Err(e) => eprintln!("[waynote] paste_image: store failed: {e}"),
+        clipboard.read_texture_async(None::<&gtk::gio::Cancellable>, move |res| {
+            let Ok(Some(texture)) = res else {
+                eprintln!("[waynote] paste_image: clipboard has no image");
+                return;
+            };
+            let raw = ci::texture_to_raw(&texture);
+            let ts = now_ts();
+            match ci::store_pasted_image(&raw, caps, &id, &ts, &base) {
+                Ok(Some(snippet)) => {
+                    crate::platform::render::NoteView::insert_at_cursor(&note_view, &snippet);
                 }
-                let _ = &this; // keep Controller alive for the duration of the read
-            },
-        );
+                Ok(None) => eprintln!("[waynote] paste_image: image rejected (over caps)"),
+                Err(e) => eprintln!("[waynote] paste_image: store failed: {e}"),
+            }
+            let _ = &this; // keep Controller alive for the duration of the read
+        });
     }
 }
 
@@ -2418,7 +2525,15 @@ mod tests {
             h: 220,
         };
         let r = initial_rect(Some(&g), [280, 220], 0);
-        assert_eq!(r, Rect { x: 100, y: 200, w: 280, h: 220 });
+        assert_eq!(
+            r,
+            Rect {
+                x: 100,
+                y: 200,
+                w: 280,
+                h: 220
+            }
+        );
     }
 
     #[test]
@@ -2429,7 +2544,11 @@ mod tests {
         // deterministic cascade offset so unplaced notes don't stack exactly
         assert!(r.x > 0 && r.y > 0);
         let r0 = initial_rect(None, [280, 220], 0);
-        assert_ne!((r.x, r.y), (r0.x, r0.y), "different index → different offset");
+        assert_ne!(
+            (r.x, r.y),
+            (r0.x, r0.y),
+            "different index → different offset"
+        );
     }
 
     #[test]
@@ -2461,7 +2580,10 @@ mod tests {
         set_body_from_raw(&mut note, "# New\nbody\n");
         assert_eq!(note.body, "# New\nbody\n");
         assert_eq!(note.id, "KEEP-ME");
-        assert_eq!(note.color, "blue", "non-body fields untouched for plain raw");
+        assert_eq!(
+            note.color, "blue",
+            "non-body fields untouched for plain raw"
+        );
         assert!(note.pinned);
     }
 
@@ -2498,10 +2620,10 @@ mod tests {
     fn watcher_produces_changes_and_intent_for_maps_them_correctly() {
         use crate::core::content_hash::content_hash;
         use crate::core::reconcile::Known;
-        use crate::platform::watcher::{WatchState, watch};
+        use crate::platform::watcher::{watch, WatchState};
+        use std::fs;
         use std::sync::{Arc, Mutex};
         use std::time::Duration;
-        use std::fs;
 
         let dir = tempfile::tempdir().unwrap();
         let paths = crate::platform::paths::Paths::from_env(|k| match k {
@@ -2518,8 +2640,11 @@ mod tests {
             &paths,
             Duration::from_millis(80),
             Arc::clone(&shared),
-            move |changes| { let _ = tx.send(changes); },
-        ).expect("watcher must start");
+            move |changes| {
+                let _ = tx.send(changes);
+            },
+        )
+        .expect("watcher must start");
 
         let note_id = "01EEEEEEEEEEEEEEEEEEEEEEEE";
         let content = format!(
@@ -2531,10 +2656,13 @@ mod tests {
         // ── Added event → Reload intent ───────────────────────────────────
         fs::write(&note_path, &content).unwrap();
         let added = await_change_t7(&rx, timeout, |cs| {
-            cs.iter().any(|c| matches!(c, crate::core::reconcile::Change::Added(id) if id == note_id))
+            cs.iter()
+                .any(|c| matches!(c, crate::core::reconcile::Change::Added(id) if id == note_id))
         });
         assert!(added.is_some(), "watcher must emit Added for a new note");
-        let added_change = added.unwrap().into_iter()
+        let added_change = added
+            .unwrap()
+            .into_iter()
             .find(|c| matches!(c, crate::core::reconcile::Change::Added(id) if id == note_id))
             .unwrap();
         assert_eq!(
@@ -2556,10 +2684,16 @@ mod tests {
         // ── Removed event → Drop intent ───────────────────────────────────
         fs::remove_file(&note_path).unwrap();
         let removed = await_change_t7(&rx, timeout, |cs| {
-            cs.iter().any(|c| matches!(c, crate::core::reconcile::Change::Removed(id) if id == note_id))
+            cs.iter()
+                .any(|c| matches!(c, crate::core::reconcile::Change::Removed(id) if id == note_id))
         });
-        assert!(removed.is_some(), "watcher must emit Removed after deletion");
-        let removed_change = removed.unwrap().into_iter()
+        assert!(
+            removed.is_some(),
+            "watcher must emit Removed after deletion"
+        );
+        let removed_change = removed
+            .unwrap()
+            .into_iter()
             .find(|c| matches!(c, crate::core::reconcile::Change::Removed(id) if id == note_id))
             .unwrap();
         assert_eq!(
@@ -2577,7 +2711,9 @@ mod tests {
         let deadline = std::time::Instant::now() + timeout;
         loop {
             let remaining = deadline.saturating_duration_since(std::time::Instant::now());
-            if remaining.is_zero() { return None; }
+            if remaining.is_zero() {
+                return None;
+            }
             match rx.recv_timeout(remaining.min(std::time::Duration::from_millis(200))) {
                 Ok(cs) if predicate(&cs) => return Some(cs),
                 Ok(_) => {}
@@ -2589,13 +2725,12 @@ mod tests {
     /// `apply_drop`'s `known` removal (the `retain` in `remove_known_row`).
     #[test]
     fn drop_removes_known_row() {
-        let mut ws = crate::platform::watcher::WatchState::new(vec![
-            crate::core::reconcile::Known {
+        let mut ws =
+            crate::platform::watcher::WatchState::new(vec![crate::core::reconcile::Known {
                 id: "ID-A".into(),
                 path: "/x/a.md".into(),
                 hash: "h1".into(),
-            },
-        ]);
+            }]);
         ws.known.retain(|k| k.id != "ID-A");
         assert!(ws.known.is_empty(), "known row must be removed on drop");
     }
@@ -2603,17 +2738,19 @@ mod tests {
     /// `apply_repath`'s `known` update via `update_or_insert_known`.
     #[test]
     fn repath_updates_known_path() {
-        let mut ws = crate::platform::watcher::WatchState::new(vec![
-            crate::core::reconcile::Known {
+        let mut ws =
+            crate::platform::watcher::WatchState::new(vec![crate::core::reconcile::Known {
                 id: "ID-B".into(),
                 path: "/x/b-old.md".into(),
                 hash: "h2".into(),
-            },
-        ]);
+            }]);
         if let Some(k) = ws.known.iter_mut().find(|k| k.id == "ID-B") {
             k.path = "/x/b-new.md".into();
         }
-        assert_eq!(ws.known[0].path, "/x/b-new.md", "known path must be updated");
+        assert_eq!(
+            ws.known[0].path, "/x/b-new.md",
+            "known path must be updated"
+        );
     }
 
     #[test]
@@ -2627,13 +2764,12 @@ mod tests {
 
     #[test]
     fn update_or_insert_known_updates_existing_row() {
-        let mut ws = crate::platform::watcher::WatchState::new(vec![
-            crate::core::reconcile::Known {
+        let mut ws =
+            crate::platform::watcher::WatchState::new(vec![crate::core::reconcile::Known {
                 id: "ID-D".into(),
                 path: "/x/d-old.md".into(),
                 hash: "old".into(),
-            },
-        ]);
+            }]);
         update_or_insert_known(&mut ws, &"ID-D".to_string(), "/x/d-new.md", "new");
         assert_eq!(ws.known.len(), 1, "must update, not duplicate");
         assert_eq!(ws.known[0].path, "/x/d-new.md");
@@ -2646,7 +2782,7 @@ mod tests {
     fn hideable_ids_excludes_pinned_and_already_hidden() {
         let rows = [
             ("a".to_string(), false, false), // visible, unpinned → hide
-            ("b".to_string(), true,  false), // pinned → keep
+            ("b".to_string(), true, false),  // pinned → keep
             ("c".to_string(), false, true),  // already hidden → skip
         ];
         let ids = hideable_ids(rows.iter().map(|(i, p, h)| (i, *p, *h)));
@@ -2658,8 +2794,8 @@ mod tests {
         let front = Layer::Front;
         let desktop = Layer::Desktop;
         let rows = [
-            ("a".to_string(), false, &front),   // unpinned, on front → moves to desktop
-            ("b".to_string(), true, &front),    // pinned → frozen, skip
+            ("a".to_string(), false, &front), // unpinned, on front → moves to desktop
+            ("b".to_string(), true, &front),  // pinned → frozen, skip
             ("c".to_string(), false, &desktop), // already on target → skip
         ];
         let ids = relayer_ids(rows.iter().map(|(i, p, l)| (i, *p, *l)), &desktop);
@@ -2720,11 +2856,21 @@ mod tests {
         };
 
         let expanded = retarget_geometry_to_monitor(&g, &target, g.h);
-        assert_eq!(expanded.y, 1080 - 220, "expanded, it is pulled back on-screen");
+        assert_eq!(
+            expanded.y,
+            1080 - 220,
+            "expanded, it is pulled back on-screen"
+        );
 
         let rolled_up = retarget_geometry_to_monitor(&g, &target, 43);
-        assert_eq!(rolled_up.y, 1030, "as a bar it already fits — leave it alone");
-        assert_eq!(rolled_up.h, 220, "the height to restore on unroll is preserved");
+        assert_eq!(
+            rolled_up.y, 1030,
+            "as a bar it already fits — leave it alone"
+        );
+        assert_eq!(
+            rolled_up.h, 220,
+            "the height to restore on unroll is preserved"
+        );
     }
 
     fn mon_info(index: usize, out: &str) -> MonitorInfo {
@@ -2738,7 +2884,11 @@ mod tests {
 
     #[test]
     fn monitor_destinations_excludes_current_and_keeps_global_indices() {
-        let monitors = [mon_info(0, "DP-1"), mon_info(1, "DP-2"), mon_info(2, "DP-3")];
+        let monitors = [
+            mon_info(0, "DP-1"),
+            mon_info(1, "DP-2"),
+            mon_info(2, "DP-3"),
+        ];
         let dests = monitor_destinations(&monitors, 1);
         // The note's own monitor (index 1 / DP-2) is dropped; the others remain
         // with their ORIGINAL indices so move_to_monitor targets the right one.
@@ -2783,7 +2933,11 @@ mod tests {
             "# Test\n",
             "content preserved through the move"
         );
-        assert_eq!(dest.parent().unwrap(), trash, "destination is in the trash dir");
+        assert_eq!(
+            dest.parent().unwrap(),
+            trash,
+            "destination is in the trash dir"
+        );
     }
 
     /// Deleting two notes whose files share a filename must not clobber: both
@@ -2806,8 +2960,14 @@ mod tests {
         let dest_a = move_to_trash(&src_a, &trash).unwrap();
         let dest_b = move_to_trash(&src_b, &trash).unwrap();
 
-        assert_ne!(dest_a, dest_b, "second delete must not reuse the first's path");
-        assert!(dest_a.exists() && dest_b.exists(), "both files survive in trash");
+        assert_ne!(
+            dest_a, dest_b,
+            "second delete must not reuse the first's path"
+        );
+        assert!(
+            dest_a.exists() && dest_b.exists(),
+            "both files survive in trash"
+        );
         let a = fs::read_to_string(&dest_a).unwrap();
         let b = fs::read_to_string(&dest_b).unwrap();
         assert!(
@@ -2844,7 +3004,10 @@ mod tests {
         assert_eq!(n.layer, Layer::Front);
         assert!(!n.pinned);
         assert!(n.tags.is_empty());
-        assert!(n.body.is_empty(), "a new note starts empty (title becomes Untitled)");
+        assert!(
+            n.body.is_empty(),
+            "a new note starts empty (title becomes Untitled)"
+        );
     }
 
     #[test]
@@ -2852,7 +3015,11 @@ mod tests {
         // collect_surface_ids sorts by note.id (ULID lexicographic = creation order).
         // We can't call collect_surface_ids directly (needs a live Controller),
         // so instead verify the sort contract on the pure sorted_ids helper.
-        let mut ids = vec!["01ZZZ".to_string(), "01AAA".to_string(), "01MMM".to_string()];
+        let mut ids = vec![
+            "01ZZZ".to_string(),
+            "01AAA".to_string(),
+            "01MMM".to_string(),
+        ];
         ids.sort();
         assert_eq!(ids, vec!["01AAA", "01MMM", "01ZZZ"]);
     }

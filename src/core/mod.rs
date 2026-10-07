@@ -5,4 +5,5 @@ pub mod image_paste;
 pub mod markdown;
 pub mod note;
 pub mod reconcile;
+pub mod scene;
 pub mod theme;

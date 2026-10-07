@@ -1,5 +1,5 @@
-use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug, Default)]
 #[serde(rename_all = "lowercase")]
@@ -68,7 +68,11 @@ fn split_into_slug_parts(title: &str) -> String {
     }
 
     let slug = result.trim_end_matches('-').to_string();
-    if slug.is_empty() { "untitled".to_string() } else { slug }
+    if slug.is_empty() {
+        "untitled".to_string()
+    } else {
+        slug
+    }
 }
 
 fn cap_slug(slug: String) -> String {
@@ -155,7 +159,11 @@ mod tests {
         // 35 copies of "é" (2 bytes each = 70 bytes) — byte-index 64 falls mid-char.
         let title: String = "é".repeat(35);
         let result = slugify(&title);
-        assert!(result.len() <= 64, "slug byte length must be ≤ 64, got {}", result.len());
+        assert!(
+            result.len() <= 64,
+            "slug byte length must be ≤ 64, got {}",
+            result.len()
+        );
         assert!(!result.is_empty(), "slug must not be empty");
         assert!(result.chars().count() > 0, "slug must contain valid chars");
         // Confirm it round-trips to String without panicking.

@@ -30,7 +30,10 @@ pub struct WatchState {
 
 impl WatchState {
     pub fn new(known: Vec<Known>) -> Self {
-        WatchState { known, own_writes: HashSet::new() }
+        WatchState {
+            known,
+            own_writes: HashSet::new(),
+        }
     }
 }
 
@@ -95,7 +98,11 @@ fn scan_entry(entry: &std::fs::DirEntry) -> Option<Scanned> {
     let bytes = std::fs::read(&path).ok()?;
     let id = extract_id(&bytes);
     let hash = content_hash(&bytes);
-    Some(Scanned { id, path: path.to_string_lossy().into_owned(), hash })
+    Some(Scanned {
+        id,
+        path: path.to_string_lossy().into_owned(),
+        hash,
+    })
 }
 
 /// Extract the note id from raw file bytes (via frontmatter parse).
@@ -134,9 +141,20 @@ pub fn watch(
     let (stop_tx, stop_rx) = std::sync::mpsc::sync_channel::<()>(1);
 
     let watcher = build_watcher(event_tx, &notes_dir)?;
-    let thread = spawn_debounce_thread(event_rx, stop_rx, debounce, notes_dir, shared_state, on_change);
+    let thread = spawn_debounce_thread(
+        event_rx,
+        stop_rx,
+        debounce,
+        notes_dir,
+        shared_state,
+        on_change,
+    );
 
-    Ok(WatchGuard { _watcher: watcher, thread: Some(thread), stop_tx })
+    Ok(WatchGuard {
+        _watcher: watcher,
+        thread: Some(thread),
+        stop_tx,
+    })
 }
 
 /// Build and start the notify watcher.
@@ -161,7 +179,14 @@ fn spawn_debounce_thread(
     on_change: impl Fn(Vec<Change>) + Send + 'static,
 ) -> std::thread::JoinHandle<()> {
     std::thread::spawn(move || {
-        run_debounce_loop(&event_rx, &stop_rx, debounce, &notes_dir, &shared_state, &on_change);
+        run_debounce_loop(
+            &event_rx,
+            &stop_rx,
+            debounce,
+            &notes_dir,
+            &shared_state,
+            &on_change,
+        );
     })
 }
 
@@ -298,7 +323,11 @@ mod tests {
         let mut result = rescan(notes_dir);
         result.sort_by(|a, b| a.id.cmp(&b.id));
 
-        assert_eq!(result.len(), 2, "must find exactly 2 notes (attachments skipped)");
+        assert_eq!(
+            result.len(),
+            2,
+            "must find exactly 2 notes (attachments skipped)"
+        );
         assert_eq!(result[0].id, id_a);
         assert_eq!(result[1].id, id_b);
     }
@@ -353,7 +382,9 @@ mod tests {
             &paths,
             Duration::from_millis(80),
             Arc::clone(&shared),
-            move |changes| { let _ = tx.send(changes); },
+            move |changes| {
+                let _ = tx.send(changes);
+            },
         )
         .expect("watcher must start");
 
@@ -385,9 +416,13 @@ mod tests {
         fs::write(&note_path, &modified_content).unwrap();
 
         let modified = await_change(&rx, timeout, |cs| {
-            cs.iter().any(|c| matches!(c, Change::Modified(i) if i == id))
+            cs.iter()
+                .any(|c| matches!(c, Change::Modified(i) if i == id))
         });
-        assert!(modified.is_some(), "Expected Modified({id}) within {timeout:?}");
+        assert!(
+            modified.is_some(),
+            "Expected Modified({id}) within {timeout:?}"
+        );
 
         // Update known hash.
         {
@@ -401,9 +436,13 @@ mod tests {
         fs::remove_file(&note_path).unwrap();
 
         let removed = await_change(&rx, timeout, |cs| {
-            cs.iter().any(|c| matches!(c, Change::Removed(i) if i == id))
+            cs.iter()
+                .any(|c| matches!(c, Change::Removed(i) if i == id))
         });
-        assert!(removed.is_some(), "Expected Removed({id}) within {timeout:?}");
+        assert!(
+            removed.is_some(),
+            "Expected Removed({id}) within {timeout:?}"
+        );
 
         drop(guard); // stop watcher + join thread
     }

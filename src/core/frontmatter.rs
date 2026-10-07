@@ -1,6 +1,6 @@
-use std::collections::BTreeMap;
-use serde::{Deserialize, Serialize};
 use crate::core::note::{Layer, Note};
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 #[derive(Serialize, Deserialize)]
 struct Frontmatter {
@@ -116,8 +116,8 @@ fn serialize_to_yaml(note: &Note) -> String {
     for (k, v) in &note.extra {
         mapping.insert(yaml_str(k), v.clone());
     }
-    let text = serde_yaml_ng::to_string(&serde_yaml_ng::Value::Mapping(mapping))
-        .unwrap_or_default();
+    let text =
+        serde_yaml_ng::to_string(&serde_yaml_ng::Value::Mapping(mapping)).unwrap_or_default();
     // serde_yaml_ng adds a trailing newline; keep it as-is
     text
 }
@@ -125,7 +125,6 @@ fn serialize_to_yaml(note: &Note) -> String {
 fn yaml_str(s: &str) -> serde_yaml_ng::Value {
     serde_yaml_ng::Value::String(s.to_string())
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -212,8 +211,14 @@ body here
             body: "body\n".to_string(),
         };
         let s = serialize(&note);
-        assert!(s.contains("layer: front"), "layer should be lowercase 'front'");
-        assert!(s.contains("tags: []"), "empty tags should render as flow-style []");
+        assert!(
+            s.contains("layer: front"),
+            "layer should be lowercase 'front'"
+        );
+        assert!(
+            s.contains("tags: []"),
+            "empty tags should render as flow-style []"
+        );
     }
 
     #[test]
@@ -227,7 +232,10 @@ body here
         let note = parse("---\nid: a\nlocked: true\n---\nbody\n");
         assert!(note.locked, "locked: true should parse");
         let s = serialize(&note);
-        assert!(s.contains("locked: true"), "serialize should emit locked: true");
+        assert!(
+            s.contains("locked: true"),
+            "serialize should emit locked: true"
+        );
         assert!(parse(&s).locked, "round-trip should preserve locked");
     }
 
@@ -238,7 +246,10 @@ body here
         assert_eq!(note.id, "abc");
         assert_eq!(note.color, "blue");
         // Body must be clean: no leaked closing fence, no stray '\r'.
-        assert!(!note.body.contains('\r'), "body should have no carriage returns");
+        assert!(
+            !note.body.contains('\r'),
+            "body should have no carriage returns"
+        );
         assert!(
             !note.body.trim_start().starts_with("---"),
             "closing fence must not leak into body"

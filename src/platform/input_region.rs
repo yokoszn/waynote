@@ -1,7 +1,7 @@
-use gtk::prelude::*;
-use gtk::gdk::prelude::SurfaceExt;
-use gtk::ApplicationWindow;
 use super::geometry::Rect;
+use gtk::gdk::prelude::SurfaceExt;
+use gtk::prelude::*;
+use gtk::ApplicationWindow;
 
 pub fn build(rects: &[Rect]) -> gtk::cairo::Region {
     let region = gtk::cairo::Region::create();
@@ -29,8 +29,13 @@ mod tests {
 
     #[test]
     fn build_covers_each_note_rect_and_leaves_gaps_clickthrough() {
-        let region = build(&[Rect { x: 10, y: 10, w: 100, h: 80 }]);
-        assert!(region.contains_point(50, 50));   // inside the note
+        let region = build(&[Rect {
+            x: 10,
+            y: 10,
+            w: 100,
+            h: 80,
+        }]);
+        assert!(region.contains_point(50, 50)); // inside the note
         assert!(!region.contains_point(500, 500)); // empty area → click-through
     }
 }

@@ -53,7 +53,12 @@ impl DoctorReport {
 pub fn format_report(report: &DoctorReport) -> String {
     let mut out = String::from("waynote doctor\n");
     for c in &report.checks {
-        out.push_str(&format!("[{}] {} — {}\n", c.status.glyph(), c.name, c.detail));
+        out.push_str(&format!(
+            "[{}] {} — {}\n",
+            c.status.glyph(),
+            c.name,
+            c.detail
+        ));
         if !c.hint.is_empty() {
             out.push_str(&format!("       hint: {}\n", c.hint));
         }
@@ -202,10 +207,7 @@ fn sni_watcher_present() -> bool {
             "org.freedesktop.DBus.ListNames",
         ])
         .output()
-        .map(|o| {
-            String::from_utf8_lossy(&o.stdout)
-                .contains("org.kde.StatusNotifierWatcher")
-        })
+        .map(|o| String::from_utf8_lossy(&o.stdout).contains("org.kde.StatusNotifierWatcher"))
         .unwrap_or(false)
 }
 
@@ -234,8 +236,14 @@ mod tests {
 
     #[test]
     fn non_writable_dir_is_fail() {
-        assert_eq!(check_dir_writable("notes", "/x", false).status, CheckStatus::Fail);
-        assert_eq!(check_dir_writable("notes", "/x", true).status, CheckStatus::Ok);
+        assert_eq!(
+            check_dir_writable("notes", "/x", false).status,
+            CheckStatus::Fail
+        );
+        assert_eq!(
+            check_dir_writable("notes", "/x", true).status,
+            CheckStatus::Ok
+        );
     }
 
     #[test]

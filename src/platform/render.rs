@@ -10,18 +10,18 @@ use std::path::{Path, PathBuf};
 use std::rc::{Rc, Weak};
 
 use gtk::gdk;
-use gtk::glib;
 use gtk::gio;
+use gtk::glib;
 use gtk::pango::{Style, Underline};
 use gtk::prelude::*;
 use gtk::{
-    Button, CheckButton, CssProvider, EventControllerKey, GestureClick, Label,
-    Orientation, Picture, PolicyType, ScrolledWindow, TextTag, TextView, WrapMode,
+    Button, CheckButton, CssProvider, EventControllerKey, GestureClick, Label, Orientation,
+    Picture, PolicyType, ScrolledWindow, TextTag, TextView, WrapMode,
 };
 
 use crate::core::markdown::{
-    self, Block, Inline, List, ListItem, RenderDoc,
-    classify_image, heading_style, is_web_link, ImageSrc,
+    self, classify_image, heading_style, is_web_link, Block, ImageSrc, Inline, List, ListItem,
+    RenderDoc,
 };
 use crate::core::note::Layer;
 use crate::core::theme::{self, Theme};
@@ -466,7 +466,11 @@ impl TagStore {
             }
             // h5/h6 are near body size, so they also take the accent colour to stay
             // unmistakably "heading"; larger levels use ink.
-            let fg = if style.accent { self.theme.accent } else { self.theme.ink };
+            let fg = if style.accent {
+                self.theme.accent
+            } else {
+                self.theme.ink
+            };
             tag.set_foreground(Some(fg));
             tag.set_pixels_above_lines(8);
             self.buffer.tag_table().add(&tag);
@@ -639,7 +643,11 @@ pub struct RenderOpts {
 
 impl Default for RenderOpts {
     fn default() -> Self {
-        Self { base_dir: PathBuf::from("."), color: "yellow".into(), content_width: DEFAULT_CONTENT_WIDTH }
+        Self {
+            base_dir: PathBuf::from("."),
+            color: "yellow".into(),
+            content_width: DEFAULT_CONTENT_WIDTH,
+        }
     }
 }
 
@@ -649,11 +657,7 @@ pub const DEFAULT_CONTENT_WIDTH: i32 = 248;
 
 /// Build a read-only `gtk::TextView` rendering `doc` using theme colours.
 /// `on_toggle(index)` is called when a task checkbox is toggled.
-pub fn render_view(
-    doc: &RenderDoc,
-    opts: &RenderOpts,
-    on_toggle: Rc<dyn Fn(usize)>,
-) -> TextView {
+pub fn render_view(doc: &RenderDoc, opts: &RenderOpts, on_toggle: Rc<dyn Fn(usize)>) -> TextView {
     let t = theme::theme(&opts.color);
     let buffer = gtk::TextBuffer::new(None::<&gtk::TextTagTable>);
     let view = TextView::builder()
@@ -691,11 +695,7 @@ pub fn render_view(
 
 /// Build a styled card widget (gtk::Box) wrapping a rendered TextView.
 /// The box carries CSS class `.waynote-card.<color>` for the paper look.
-pub fn render_note(
-    doc: &RenderDoc,
-    opts: &RenderOpts,
-    on_toggle: Rc<dyn Fn(usize)>,
-) -> gtk::Box {
+pub fn render_note(doc: &RenderDoc, opts: &RenderOpts, on_toggle: Rc<dyn Fn(usize)>) -> gtk::Box {
     let text_view = render_view(doc, opts, on_toggle);
     let card = gtk::Box::new(Orientation::Vertical, 0);
     card.add_css_class("waynote-card");
@@ -785,12 +785,7 @@ fn render_code_block(
 
 // ── Blockquote ────────────────────────────────────────────────────────────────
 
-fn render_blockquote(
-    ctx: &mut RenderCtx,
-    inner: &[Block],
-    depth: usize,
-    iter: &mut gtk::TextIter,
-) {
+fn render_blockquote(ctx: &mut RenderCtx, inner: &[Block], depth: usize, iter: &mut gtk::TextIter) {
     let start_off = iter.offset();
     render_blocks(ctx, inner, depth + 1, iter);
     let end_off = iter.offset();
@@ -1005,17 +1000,13 @@ fn render_strikethrough(
     apply_over_range(&ctx.buffer, start_off, iter.offset(), &st_tag);
 }
 
-fn render_link(
-    ctx: &mut RenderCtx,
-    href: &str,
-    children: &[Inline],
-    iter: &mut gtk::TextIter,
-) {
+fn render_link(ctx: &mut RenderCtx, href: &str, children: &[Inline], iter: &mut gtk::TextIter) {
     let link_tag = ctx.tags.link_tag_for(href);
     let start_off = iter.offset();
     render_inlines_with_base(ctx, children, iter, None);
     apply_over_range(&ctx.buffer, start_off, iter.offset(), &link_tag);
-    ctx.link_map.insert(format!("link|{href}"), href.to_string());
+    ctx.link_map
+        .insert(format!("link|{href}"), href.to_string());
 }
 
 fn render_image(ctx: &mut RenderCtx, dest: &str, alt: &str, iter: &mut gtk::TextIter) {
@@ -1097,7 +1088,9 @@ fn wire_link_click(view: &TextView, link_map: HashMap<String, String>) {
 fn handle_link_click(view: &TextView, map: &HashMap<String, String>, x: f64, y: f64) {
     use gtk::TextWindowType;
     let (bx, by) = view.window_to_buffer_coords(TextWindowType::Widget, x as i32, y as i32);
-    let Some(iter) = view.iter_at_location(bx, by) else { return };
+    let Some(iter) = view.iter_at_location(bx, by) else {
+        return;
+    };
     for tag in iter.tags() {
         let Some(name) = tag.name() else { continue };
         if let Some(href) = map.get(name.as_str()) {
@@ -1245,8 +1238,15 @@ impl NoteView {
         stack.add_named(&edit_scroller, Some(PAGE_EDIT));
 
         // Initial rendered page (placeholder on_toggle; replaced by rebuild below).
-        let view = render_view(&markdown::parse(&state.borrow().raw),
-            &RenderOpts { base_dir, color: color.to_string(), content_width }, Rc::new(|_| {}));
+        let view = render_view(
+            &markdown::parse(&state.borrow().raw),
+            &RenderOpts {
+                base_dir,
+                color: color.to_string(),
+                content_width,
+            },
+            Rc::new(|_| {}),
+        );
         let view_scroller = make_content_scroller(&view);
         stack.add_named(&view_scroller, Some(PAGE_VIEW));
         stack.set_visible_child_name(PAGE_VIEW);
@@ -1306,7 +1306,9 @@ impl NoteView {
     /// this `NoteView` (the page rebuild happens in `rebuild_view_page`).
     fn exit_edit(&mut self) -> String {
         let buf = self.edit.buffer();
-        let new_raw = buf.text(&buf.start_iter(), &buf.end_iter(), false).to_string();
+        let new_raw = buf
+            .text(&buf.start_iter(), &buf.end_iter(), false)
+            .to_string();
         self.state.borrow_mut().raw = new_raw.clone();
         self.indicator.set_label("● view");
         new_raw
@@ -1339,7 +1341,10 @@ impl NoteView {
             let mut st = nv.state.borrow_mut();
             let changed = st.content_width != content_width;
             st.content_width = content_width;
-            (changed, nv.stack.visible_child_name().as_deref() == Some(PAGE_VIEW))
+            (
+                changed,
+                nv.stack.visible_child_name().as_deref() == Some(PAGE_VIEW),
+            )
         };
         if changed && is_view {
             rebuild_view_page(&Rc::downgrade(this));
@@ -1399,15 +1404,29 @@ fn rebuild_view_page(nv: &Weak<RefCell<NoteView>>) {
     let Some(strong) = nv.upgrade() else { return };
     let (state, stack, view_scroller, sink) = {
         let g = strong.borrow();
-        (g.state.clone(), g.stack.clone(), g.view_scroller.clone(), g.handler_sink())
+        (
+            g.state.clone(),
+            g.stack.clone(),
+            g.view_scroller.clone(),
+            g.handler_sink(),
+        )
     };
 
     let (raw, base_dir, color, content_width) = {
         let s = state.borrow();
-        (s.raw.clone(), s.base_dir.clone(), s.color.clone(), s.content_width)
+        (
+            s.raw.clone(),
+            s.base_dir.clone(),
+            s.color.clone(),
+            s.content_width,
+        )
     };
     let doc = markdown::parse(&raw);
-    let opts = RenderOpts { base_dir, color, content_width };
+    let opts = RenderOpts {
+        base_dir,
+        color,
+        content_width,
+    };
     let on_toggle = make_toggle_closure(sink.clone());
     let new_view = render_view(&doc, &opts, on_toggle);
     attach_double_click(&new_view, sink);
@@ -1615,7 +1634,10 @@ fn wire_edit_keys(note_view: &Rc<RefCell<NoteView>>) {
         let ctrl_held = mods.contains(gdk::ModifierType::CONTROL_MASK);
         if ctrl_held && key == gdk::Key::v {
             if let Some(strong) = nv.upgrade() {
-                emit(&strong.borrow().handler_sink(), NoteEvent::PasteImageRequested);
+                emit(
+                    &strong.borrow().handler_sink(),
+                    NoteEvent::PasteImageRequested,
+                );
             }
             return glib::Propagation::Proceed;
         }
@@ -1665,8 +1687,7 @@ fn wire_mode_toggle(note_view: &Rc<RefCell<NoteView>>) {
     click.set_button(1);
     click.connect_released(move |_g, _n, _x, _y| {
         let Some(strong) = nv.upgrade() else { return };
-        let is_editing =
-            strong.borrow().stack.visible_child_name().as_deref() == Some(PAGE_EDIT);
+        let is_editing = strong.borrow().stack.visible_child_name().as_deref() == Some(PAGE_EDIT);
         if is_editing {
             NoteView::commit_edit_if_editing(&strong);
         } else {
@@ -1695,8 +1716,10 @@ pub trait DragResizeHandler {
     /// lives on RIGHT NOW. Read fresh at gesture-begin (not captured at wire time),
     /// so a note moved to a different-sized monitor drags across the whole new
     /// screen instead of being clamped to its old monitor's dimensions.
-    fn current_bounds(&self, id: &crate::app::note_entry::NoteId)
-        -> crate::platform::geometry::Rect;
+    fn current_bounds(
+        &self,
+        id: &crate::app::note_entry::NoteId,
+    ) -> crate::platform::geometry::Rect;
     /// Update position live during drag (no disk write).
     fn move_live(&mut self, id: &crate::app::note_entry::NoteId, x: i32, y: i32);
     /// Update size live during resize (no disk write).
@@ -2249,8 +2272,8 @@ impl NoteChrome {
     ) where
         C: DragResizeHandler + 'static,
     {
-        use gtk::GestureDrag;
         use crate::platform::geometry::{drag_to, Rect};
+        use gtk::GestureDrag;
 
         let gesture = GestureDrag::new();
         // Use Button 1 (primary) only for dragging.
@@ -2268,7 +2291,12 @@ impl NoteChrome {
         // wired once and never rebuilt, so capturing a fixed rect would clamp to the
         // note's monitor-at-wire-time after it is moved to a different-sized one).
         let bounds: std::rc::Rc<std::cell::Cell<Rect>> =
-            std::rc::Rc::new(std::cell::Cell::new(Rect { x: 0, y: 0, w: 0, h: 0 }));
+            std::rc::Rc::new(std::cell::Cell::new(Rect {
+                x: 0,
+                y: 0,
+                w: 0,
+                h: 0,
+            }));
 
         let geom_begin = start_geom.clone();
         let ptr_begin = start_ptr.clone();
@@ -2277,7 +2305,9 @@ impl NoteChrome {
         let id_begin = id.clone();
         gesture.connect_drag_begin(move |g, _x, _y| {
             let Some(ptr) = event_position(g) else { return };
-            let Some(ctrl) = weak_begin.upgrade() else { return };
+            let Some(ctrl) = weak_begin.upgrade() else {
+                return;
+            };
             // Lift the note's surface for the gesture if it's on the Desktop layer.
             ctrl.borrow_mut().begin_pointer_drag(&id_begin);
             let (px, py, gw, gh, b) = {
@@ -2297,10 +2327,19 @@ impl NoteChrome {
         let weak_update = ctrl_weak.clone();
         let id_update = id.clone();
         gesture.connect_drag_update(move |g, _off_x, _off_y| {
-            let Some((dx, dy)) = pointer_delta(g, &ptr_update) else { return };
-            let Some(ctrl) = weak_update.upgrade() else { return };
+            let Some((dx, dy)) = pointer_delta(g, &ptr_update) else {
+                return;
+            };
+            let Some(ctrl) = weak_update.upgrade() else {
+                return;
+            };
             let (sx, sy, sw, sh) = geom_update.get();
-            let origin = Rect { x: sx, y: sy, w: sw, h: sh };
+            let origin = Rect {
+                x: sx,
+                y: sy,
+                w: sw,
+                h: sh,
+            };
             let new = drag_to(origin, dx, dy, bounds_update.get());
             ctrl.borrow_mut().move_live(&id_update, new.x, new.y);
         });
@@ -2308,7 +2347,9 @@ impl NoteChrome {
         let weak_end = ctrl_weak;
         let id_end = id;
         gesture.connect_drag_end(move |g, _off_x, _off_y| {
-            let Some(ctrl) = weak_end.upgrade() else { return };
+            let Some(ctrl) = weak_end.upgrade() else {
+                return;
+            };
             // Commit only on a valid AND non-zero delta. `pointer_delta` returns
             // `None` solely when the event carries no position — never for a still
             // pointer — so without the `(0,0)` check every plain CLICK on the header
@@ -2321,7 +2362,12 @@ impl NoteChrome {
             let delta = pointer_delta(g, &start_ptr);
             if let Some((dx, dy)) = delta.filter(|d| is_real_move(*d)) {
                 let (sx, sy, sw, sh) = start_geom.get();
-                let origin = Rect { x: sx, y: sy, w: sw, h: sh };
+                let origin = Rect {
+                    x: sx,
+                    y: sy,
+                    w: sw,
+                    h: sh,
+                };
                 let new = drag_to(origin, dx, dy, bounds.get());
                 ctrl.borrow_mut().commit_move(&id_end, new.x, new.y);
             }
@@ -2346,8 +2392,8 @@ impl NoteChrome {
     ) where
         C: DragResizeHandler + 'static,
     {
-        use gtk::GestureDrag;
         use crate::platform::geometry::{resize_to, Rect};
+        use gtk::GestureDrag;
         // 160 was fiction: GTK never honoured it. The header's 7 controls
         // (`HEADER_BTN_PX` each) plus the card's 32px padding measure ~200, and
         // `GtkFixed` allocates that regardless — which left the title `Label`
@@ -2369,7 +2415,12 @@ impl NoteChrome {
         // Fresh-on-begin clamp bounds — see `wire_drag_gesture` for why this is not
         // captured once at wire time.
         let bounds: std::rc::Rc<std::cell::Cell<Rect>> =
-            std::rc::Rc::new(std::cell::Cell::new(Rect { x: 0, y: 0, w: 0, h: 0 }));
+            std::rc::Rc::new(std::cell::Cell::new(Rect {
+                x: 0,
+                y: 0,
+                w: 0,
+                h: 0,
+            }));
 
         let rect_begin = start_rect.clone();
         let ptr_begin = start_ptr.clone();
@@ -2378,7 +2429,9 @@ impl NoteChrome {
         let id_begin = id.clone();
         gesture.connect_drag_begin(move |g, _x, _y| {
             let Some(ptr) = event_position(g) else { return };
-            let Some(ctrl) = weak_begin.upgrade() else { return };
+            let Some(ctrl) = weak_begin.upgrade() else {
+                return;
+            };
             // Lift the note's surface for the gesture if it's on the Desktop layer.
             ctrl.borrow_mut().begin_pointer_drag(&id_begin);
             let (px, py, w, h, b) = {
@@ -2398,8 +2451,12 @@ impl NoteChrome {
         let weak_update = ctrl_weak.clone();
         let id_update = id.clone();
         gesture.connect_drag_update(move |g, _off_x, _off_y| {
-            let Some((dx, dy)) = pointer_delta(g, &ptr_update) else { return };
-            let Some(ctrl) = weak_update.upgrade() else { return };
+            let Some((dx, dy)) = pointer_delta(g, &ptr_update) else {
+                return;
+            };
+            let Some(ctrl) = weak_update.upgrade() else {
+                return;
+            };
             let (px, py, w, h) = rect_update.get();
             let start = Rect { x: px, y: py, w, h };
             let new = resize_to(start, dx, dy, MIN_W, MIN_H, bounds_update.get());
@@ -2409,7 +2466,9 @@ impl NoteChrome {
         let weak_end = ctrl_weak;
         let id_end = id;
         gesture.connect_drag_end(move |g, _off_x, _off_y| {
-            let Some(ctrl) = weak_end.upgrade() else { return };
+            let Some(ctrl) = weak_end.upgrade() else {
+                return;
+            };
             // Commit only if we have a valid pointer delta, but ALWAYS restore the
             // lifted surface on release (incl. a cancelled gesture).
             if let Some((dx, dy)) = pointer_delta(g, &start_ptr) {

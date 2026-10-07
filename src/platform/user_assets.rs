@@ -77,8 +77,14 @@ mod tests {
             icon_svg_target(data),
             Path::new("/d/icons/hicolor/scalable/apps/waynote.svg")
         );
-        assert_eq!(desktop_target(data), Path::new("/d/applications/waynote.desktop"));
-        assert_eq!(unit_target(cfg), Path::new("/c/systemd/user/waynote.service"));
+        assert_eq!(
+            desktop_target(data),
+            Path::new("/d/applications/waynote.desktop")
+        );
+        assert_eq!(
+            unit_target(cfg),
+            Path::new("/c/systemd/user/waynote.service")
+        );
     }
 
     #[test]

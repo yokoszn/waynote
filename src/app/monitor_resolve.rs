@@ -138,14 +138,20 @@ fn by_output_id(monitors: &[MonitorInfo], output: &str) -> Option<usize> {
     if output.is_empty() {
         return None;
     }
-    monitors.iter().find(|m| m.output_id == output).map(|m| m.index)
+    monitors
+        .iter()
+        .find(|m| m.output_id == output)
+        .map(|m| m.index)
 }
 
 fn by_description(monitors: &[MonitorInfo], desc: &str) -> Option<usize> {
     if desc.is_empty() {
         return None;
     }
-    monitors.iter().find(|m| m.description == desc).map(|m| m.index)
+    monitors
+        .iter()
+        .find(|m| m.description == desc)
+        .map(|m| m.index)
 }
 
 /// Pick the live monitor whose logical rect is closest to the SAVED monitor's
@@ -240,17 +246,21 @@ mod tests {
         // The note's x/y are LOCAL to its monitor; resolution must key off the saved
         // monitor's logical rect, NOT x/y. Saved rect = Right; small local x/y.
         let mons = vec![
-            mon(0, "DP-1", "Left",  [0,    0, 2560, 1440]),
+            mon(0, "DP-1", "Left", [0, 0, 2560, 1440]),
             mon(1, "DP-2", "Right", [2560, 0, 1920, 1080]),
         ];
         let g = geo("GONE", "GONE", [2560, 0, 1920, 1080], 100, 100);
-        assert_eq!(resolve(&mons, &g), 1, "saved logical rect (Right) must win, not x/y");
+        assert_eq!(
+            resolve(&mons, &g),
+            1,
+            "saved logical rect (Right) must win, not x/y"
+        );
     }
 
     #[test]
     fn resolve_monitor_nearest_logical_when_saved_rect_is_off_but_closest_to_one() {
         let mons = vec![
-            mon(0, "DP-1", "Left",  [0,    0, 2560, 1440]),
+            mon(0, "DP-1", "Left", [0, 0, 2560, 1440]),
             mon(1, "DP-2", "Right", [2560, 0, 1920, 1080]),
         ];
         // Saved rect doesn't exactly match either live monitor, but its centre is
@@ -264,7 +274,7 @@ mod tests {
         // No id/desc, no saved logical rect, but a non-zero LOCAL x/y. x/y must NOT
         // be treated as a global signal — resolution falls back (cursor here).
         let mons = vec![
-            mon(0, "DP-1", "Left",  [0,    0, 2560, 1440]),
+            mon(0, "DP-1", "Left", [0, 0, 2560, 1440]),
             mon(1, "DP-2", "Right", [2560, 0, 1920, 1080]),
         ];
         let g = geo("", "", [0, 0, 0, 0], 48, 48);
@@ -306,10 +316,10 @@ mod tests {
             mon(0, "DP-1", "d", [0, 0, 1, 1]),
             mon(1, "DP-2", "e", [1, 0, 1, 1]),
         ];
-        assert_eq!(active_monitor(Some("DP-2"), None, None, &mons, 0), 1);        // explicit
-        assert_eq!(active_monitor(None, Some(1), None, &mons, 0), 1);             // cursor
-        assert_eq!(active_monitor(None, None, Some("DP-2"), &mons, 0), 1);        // last-used
-        assert_eq!(active_monitor(None, None, None, &mons, 0), 0);                // primary
+        assert_eq!(active_monitor(Some("DP-2"), None, None, &mons, 0), 1); // explicit
+        assert_eq!(active_monitor(None, Some(1), None, &mons, 0), 1); // cursor
+        assert_eq!(active_monitor(None, None, Some("DP-2"), &mons, 0), 1); // last-used
+        assert_eq!(active_monitor(None, None, None, &mons, 0), 0); // primary
     }
 
     #[test]

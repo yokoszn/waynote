@@ -1,5 +1,10 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Rect { pub x: i32, pub y: i32, pub w: i32, pub h: i32 }
+pub struct Rect {
+    pub x: i32,
+    pub y: i32,
+    pub w: i32,
+    pub h: i32,
+}
 
 /// PURE: new top-left given the drag start origin + pointer delta, clamped into
 /// bounds. The note's size is preserved; only x/y change.
@@ -13,7 +18,12 @@ pub struct Rect { pub x: i32, pub y: i32, pub w: i32, pub h: i32 }
 // used in Plan 5 Task 9 gesture wiring (NoteChrome header drag)
 #[allow(dead_code)]
 pub fn drag_to(origin: Rect, dx: i32, dy: i32, bounds: Rect) -> Rect {
-    let moved = Rect { x: origin.x + dx, y: origin.y + dy, w: origin.w, h: origin.h };
+    let moved = Rect {
+        x: origin.x + dx,
+        y: origin.y + dy,
+        w: origin.w,
+        h: origin.h,
+    };
     clamp_into(moved, bounds)
 }
 
@@ -24,7 +34,12 @@ pub fn drag_to(origin: Rect, dx: i32, dy: i32, bounds: Rect) -> Rect {
 pub fn resize_to(start: Rect, dx: i32, dy: i32, min_w: i32, min_h: i32, bounds: Rect) -> Rect {
     let new_w = (start.w + dx).max(min_w);
     let new_h = (start.h + dy).max(min_h);
-    let resized = Rect { x: start.x, y: start.y, w: new_w, h: new_h };
+    let resized = Rect {
+        x: start.x,
+        y: start.y,
+        w: new_w,
+        h: new_h,
+    };
     clamp_into(resized, bounds)
 }
 
@@ -47,16 +62,29 @@ pub fn resize_to(start: Rect, dx: i32, dy: i32, min_w: i32, min_h: i32, bounds: 
 /// from the bottom edge.
 pub fn fit_rect(saved: Rect, collapsed: bool, min_w: i32, min_h: i32) -> Rect {
     let h = if collapsed { min_h } else { saved.h.max(min_h) };
-    Rect { w: saved.w.max(min_w), h, ..saved }
+    Rect {
+        w: saved.w.max(min_w),
+        h,
+        ..saved
+    }
 }
 
 // used in Plan 4 (drag-to-move / auto-arrange)
 #[allow(dead_code)]
-pub fn grid_position(index: usize, per_col: usize, cell: (i32, i32), margin: (i32, i32), gap: i32) -> (i32, i32) {
+pub fn grid_position(
+    index: usize,
+    per_col: usize,
+    cell: (i32, i32),
+    margin: (i32, i32),
+    gap: i32,
+) -> (i32, i32) {
     let per_col = per_col.max(1) as i32;
     let i = index as i32;
     let (col, row) = (i / per_col, i % per_col);
-    (margin.0 + col * (cell.0 + gap), margin.1 + row * (cell.1 + gap))
+    (
+        margin.0 + col * (cell.0 + gap),
+        margin.1 + row * (cell.1 + gap),
+    )
 }
 
 // used in Plan 4 (drag-to-move / auto-arrange)
@@ -83,17 +111,53 @@ mod tests {
 
     #[test]
     fn clamp_into_pushes_an_offscreen_rect_back_inside_bounds() {
-        let bounds = Rect { x: 0, y: 0, w: 1920, h: 1080 };
-        let r = Rect { x: 1900, y: 1050, w: 240, h: 200 };
+        let bounds = Rect {
+            x: 0,
+            y: 0,
+            w: 1920,
+            h: 1080,
+        };
+        let r = Rect {
+            x: 1900,
+            y: 1050,
+            w: 240,
+            h: 200,
+        };
         let c = clamp_into(r, bounds);
-        assert_eq!(c, Rect { x: 1680, y: 880, w: 240, h: 200 });
+        assert_eq!(
+            c,
+            Rect {
+                x: 1680,
+                y: 880,
+                w: 240,
+                h: 200
+            }
+        );
     }
 
     #[test]
     fn drag_to_moves_by_delta_and_clamps_into_bounds() {
-        let bounds = Rect { x: 0, y: 0, w: 1920, h: 1080 };
-        let origin = Rect { x: 100, y: 100, w: 280, h: 220 };
-        assert_eq!(drag_to(origin, 50, 30, bounds), Rect { x: 150, y: 130, w: 280, h: 220 });
+        let bounds = Rect {
+            x: 0,
+            y: 0,
+            w: 1920,
+            h: 1080,
+        };
+        let origin = Rect {
+            x: 100,
+            y: 100,
+            w: 280,
+            h: 220,
+        };
+        assert_eq!(
+            drag_to(origin, 50, 30, bounds),
+            Rect {
+                x: 150,
+                y: 130,
+                w: 280,
+                h: 220
+            }
+        );
         // dragging off the right edge clamps so the note stays fully visible
         let off = drag_to(origin, 5000, 0, bounds);
         assert_eq!(off.x, 1920 - 280);
@@ -101,8 +165,18 @@ mod tests {
 
     #[test]
     fn drag_to_preserves_size() {
-        let bounds = Rect { x: 0, y: 0, w: 1920, h: 1080 };
-        let origin = Rect { x: 200, y: 200, w: 300, h: 250 };
+        let bounds = Rect {
+            x: 0,
+            y: 0,
+            w: 1920,
+            h: 1080,
+        };
+        let origin = Rect {
+            x: 200,
+            y: 200,
+            w: 300,
+            h: 250,
+        };
         let result = drag_to(origin, -50, -100, bounds);
         assert_eq!(result.w, 300);
         assert_eq!(result.h, 250);
@@ -112,8 +186,18 @@ mod tests {
 
     #[test]
     fn drag_to_clamps_left_and_top() {
-        let bounds = Rect { x: 0, y: 0, w: 1920, h: 1080 };
-        let origin = Rect { x: 50, y: 50, w: 280, h: 220 };
+        let bounds = Rect {
+            x: 0,
+            y: 0,
+            w: 1920,
+            h: 1080,
+        };
+        let origin = Rect {
+            x: 50,
+            y: 50,
+            w: 280,
+            h: 220,
+        };
         let off = drag_to(origin, -5000, -5000, bounds);
         assert_eq!(off.x, 0);
         assert_eq!(off.y, 0);
@@ -121,9 +205,27 @@ mod tests {
 
     #[test]
     fn resize_to_grows_by_delta_with_min_and_bounds() {
-        let bounds = Rect { x: 0, y: 0, w: 1920, h: 1080 };
-        let start = Rect { x: 100, y: 100, w: 280, h: 220 };
-        assert_eq!(resize_to(start, 40, 20, 120, 100, bounds), Rect { x: 100, y: 100, w: 320, h: 240 });
+        let bounds = Rect {
+            x: 0,
+            y: 0,
+            w: 1920,
+            h: 1080,
+        };
+        let start = Rect {
+            x: 100,
+            y: 100,
+            w: 280,
+            h: 220,
+        };
+        assert_eq!(
+            resize_to(start, 40, 20, 120, 100, bounds),
+            Rect {
+                x: 100,
+                y: 100,
+                w: 320,
+                h: 240
+            }
+        );
         // shrinking below min clamps to min
         let small = resize_to(start, -1000, -1000, 120, 100, bounds);
         assert_eq!((small.w, small.h), (120, 100));
@@ -131,8 +233,18 @@ mod tests {
 
     #[test]
     fn resize_to_preserves_origin() {
-        let bounds = Rect { x: 0, y: 0, w: 1920, h: 1080 };
-        let start = Rect { x: 300, y: 400, w: 280, h: 220 };
+        let bounds = Rect {
+            x: 0,
+            y: 0,
+            w: 1920,
+            h: 1080,
+        };
+        let start = Rect {
+            x: 300,
+            y: 400,
+            w: 280,
+            h: 220,
+        };
         let r = resize_to(start, 50, 30, 120, 100, bounds);
         assert_eq!(r.x, 300);
         assert_eq!(r.y, 400);
@@ -140,8 +252,18 @@ mod tests {
 
     #[test]
     fn resize_to_clamps_position_when_size_exceeds_bounds() {
-        let bounds = Rect { x: 0, y: 0, w: 1920, h: 1080 };
-        let start = Rect { x: 100, y: 100, w: 280, h: 220 };
+        let bounds = Rect {
+            x: 0,
+            y: 0,
+            w: 1920,
+            h: 1080,
+        };
+        let start = Rect {
+            x: 100,
+            y: 100,
+            w: 280,
+            h: 220,
+        };
         let r = resize_to(start, 10000, 10000, 120, 100, bounds);
         // clamp_into clamps the position (x,y), not the size; position stays in bounds
         assert!(r.x >= bounds.x, "x must not go left of bounds");
@@ -152,16 +274,31 @@ mod tests {
 
     #[test]
     fn rolling_up_takes_the_measured_bar_height_and_keeps_position_and_width() {
-        let saved = Rect { x: 120, y: 340, w: 280, h: 220 };
+        let saved = Rect {
+            x: 120,
+            y: 340,
+            w: 280,
+            h: 220,
+        };
         assert_eq!(
             fit_rect(saved, true, 200, 43),
-            Rect { x: 120, y: 340, w: 280, h: 43 }
+            Rect {
+                x: 120,
+                y: 340,
+                w: 280,
+                h: 43
+            }
         );
     }
 
     #[test]
     fn an_expanded_note_keeps_its_saved_height() {
-        let saved = Rect { x: 0, y: 0, w: 280, h: 220 };
+        let saved = Rect {
+            x: 0,
+            y: 0,
+            w: 280,
+            h: 220,
+        };
         assert_eq!(fit_rect(saved, false, 200, 43).h, 220);
     }
 
@@ -171,21 +308,40 @@ mod tests {
         // theme whose controls measure wider than the 260px drag minimum. GTK draws
         // the header's own width regardless, so the rect must report it or the input
         // region leaves visible, unclickable card behind.
-        let saved = Rect { x: 0, y: 0, w: 160, h: 220 };
+        let saved = Rect {
+            x: 0,
+            y: 0,
+            w: 160,
+            h: 220,
+        };
         assert_eq!(fit_rect(saved, false, 200, 43).w, 200);
-        assert_eq!(fit_rect(saved, true, 200, 43).w, 200, "same while rolled up");
+        assert_eq!(
+            fit_rect(saved, true, 200, 43).w,
+            200,
+            "same while rolled up"
+        );
     }
 
     #[test]
     fn a_note_wider_than_its_minimum_is_left_alone() {
-        let saved = Rect { x: 0, y: 0, w: 400, h: 220 };
+        let saved = Rect {
+            x: 0,
+            y: 0,
+            w: 400,
+            h: 220,
+        };
         assert_eq!(fit_rect(saved, false, 200, 43).w, 400);
     }
 
     #[test]
     fn an_expanded_note_shorter_than_its_minimum_grows_to_it() {
         // A huge font can push the card's own minimum past a small saved height.
-        let saved = Rect { x: 0, y: 0, w: 280, h: 30 };
+        let saved = Rect {
+            x: 0,
+            y: 0,
+            w: 280,
+            h: 30,
+        };
         assert_eq!(fit_rect(saved, false, 200, 60).h, 60);
     }
 }

@@ -68,10 +68,16 @@ mod tests {
 
     #[test]
     fn renamed_repaths() {
-        let c = Change::Renamed { id: "a".into(), new_path: "/x/a-new.md".into() };
+        let c = Change::Renamed {
+            id: "a".into(),
+            new_path: "/x/a-new.md".into(),
+        };
         assert_eq!(
             intent_for(&c),
-            ApplyIntent::Repath { id: "a".into(), new_path: "/x/a-new.md".into() }
+            ApplyIntent::Repath {
+                id: "a".into(),
+                new_path: "/x/a-new.md".into()
+            }
         );
     }
 }

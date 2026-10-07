@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use crate::core::content_hash::content_hash;
 use crate::core::frontmatter;
-use crate::core::id_policy::{IdGen, RawId, resolve};
+use crate::core::id_policy::{resolve, IdGen, RawId};
 use crate::core::note::Note;
 use crate::platform::paths::Paths;
 
@@ -157,7 +157,11 @@ fn filename_id_from(filename: &str) -> Option<&str> {
         Some(pos) => &stem[..pos],
         None => stem,
     };
-    if candidate.is_empty() { None } else { Some(candidate) }
+    if candidate.is_empty() {
+        None
+    } else {
+        Some(candidate)
+    }
 }
 
 /// Outcome of a conflict-aware save operation.
@@ -223,7 +227,10 @@ pub fn save_checked_to(
 /// Write a conflict copy alongside `target`: `<stem>.conflict-<ts>.md`.
 fn write_conflict_next_to(target: &Path, note: &Note, ts: &str) -> std::io::Result<PathBuf> {
     let parent = target.parent().unwrap_or_else(|| Path::new("."));
-    let stem = target.file_stem().and_then(|s| s.to_str()).unwrap_or("note");
+    let stem = target
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("note");
     let conflict_path = parent.join(format!("{stem}.conflict-{ts}.md"));
     let bytes = frontmatter::serialize(note).into_bytes();
     atomic_write(&conflict_path, &bytes)?;
@@ -248,7 +255,9 @@ pub fn atomic_write(target: &Path, bytes: &[u8]) -> std::io::Result<()> {
     // Build a temp path in the same directory — same filesystem, so rename is atomic.
     let file_name = target
         .file_name()
-        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidInput, "target has no filename"))?
+        .ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::InvalidInput, "target has no filename")
+        })?
         .to_string_lossy();
     let tmp_name = format!("{}.tmp-{}", file_name, std::process::id());
     let tmp_path = parent.join(&tmp_name);
@@ -332,7 +341,11 @@ mod tests {
             .unwrap()
             .filter_map(|e| e.ok())
             .collect();
-        assert_eq!(entries.len(), 1, "only the final file, no temps: {entries:?}");
+        assert_eq!(
+            entries.len(),
+            1,
+            "only the final file, no temps: {entries:?}"
+        );
     }
 
     #[test]
@@ -343,7 +356,8 @@ mod tests {
         fs::create_dir_all(&notes_dir).unwrap();
 
         // File with empty id in frontmatter.
-        let content = "---\nid: \"\"\ncolor: yellow\npinned: false\nlayer: front\ntags: []\n---\n# No Id\n";
+        let content =
+            "---\nid: \"\"\ncolor: yellow\npinned: false\nlayer: front\ntags: []\n---\n# No Id\n";
         fs::write(notes_dir.join("no-id.md"), content).unwrap();
 
         let mut gen = SeqIdGen::new();
@@ -356,7 +370,10 @@ mod tests {
         let mut gen2 = SeqIdGen::new();
         let loaded2 = load_all(&paths, &mut gen2).unwrap();
         assert_eq!(loaded2.len(), 1);
-        assert_eq!(loaded2[0].note.id, assigned_id, "id must be stable on second load");
+        assert_eq!(
+            loaded2[0].note.id, assigned_id,
+            "id must be stable on second load"
+        );
     }
 
     #[test]
@@ -436,12 +453,7 @@ mod tests {
         let md_files: Vec<_> = fs::read_dir(&notes_dir)
             .unwrap()
             .filter_map(|e| e.ok())
-            .filter(|e| {
-                e.path()
-                    .extension()
-                    .and_then(|x| x.to_str())
-                    == Some("md")
-            })
+            .filter(|e| e.path().extension().and_then(|x| x.to_str()) == Some("md"))
             .collect();
 
         assert_eq!(
@@ -463,9 +475,7 @@ mod tests {
         let stray: Vec<_> = fs::read_dir(&notes_dir)
             .unwrap()
             .filter_map(|e| e.ok())
-            .filter(|e| {
-                e.path().extension().and_then(|x| x.to_str()) == Some("tmp-del")
-            })
+            .filter(|e| e.path().extension().and_then(|x| x.to_str()) == Some("tmp-del"))
             .collect();
         assert!(stray.is_empty(), "no .tmp-del files should remain");
     }
@@ -520,7 +530,10 @@ mod tests {
         assert_ne!(note.slug(), "original-title");
 
         let hash = save_to(&target, &note).unwrap();
-        assert!(target.exists(), "must write to the frozen path, not a slug-derived one");
+        assert!(
+            target.exists(),
+            "must write to the frozen path, not a slug-derived one"
+        );
 
         // Exactly one .md file in the dir — no orphan was created.
         let md_count = fs::read_dir(dir.path())
@@ -570,8 +583,14 @@ mod tests {
             _ => panic!("expected Conflict"),
         };
         assert!(conflict.exists());
-        assert!(conflict.file_name().unwrap().to_string_lossy().contains(".conflict-"));
-        assert!(fs::read_to_string(&conflict).unwrap().contains("in-memory body"));
+        assert!(conflict
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .contains(".conflict-"));
+        assert!(fs::read_to_string(&conflict)
+            .unwrap()
+            .contains("in-memory body"));
         assert!(
             fs::read_to_string(&target).unwrap().contains("External"),
             "original untouched"

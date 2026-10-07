@@ -41,7 +41,11 @@ pub fn downsample(img: &RawImage, factor: u32) -> RawImage {
     let nw = (img.width / factor).max(1);
     let nh = (img.height / factor).max(1);
     let out = image::imageops::resize(&src, nw, nh, image::imageops::FilterType::Triangle);
-    RawImage { width: out.width(), height: out.height(), rgba: out.into_raw() }
+    RawImage {
+        width: out.width(),
+        height: out.height(),
+        rgba: out.into_raw(),
+    }
 }
 
 /// PURE: encode a `RawImage` as PNG bytes.
@@ -106,7 +110,11 @@ pub fn texture_to_raw(texture: &gtk::gdk::Texture) -> RawImage {
     texture.download(&mut buf, (w * 4) as usize);
     // Swizzle B↔R so the buffer is RGBA before PNG encoding.
     bgra_to_rgba(&mut buf);
-    RawImage { width: w, height: h, rgba: buf }
+    RawImage {
+        width: w,
+        height: h,
+        rgba: buf,
+    }
 }
 
 #[cfg(test)]
@@ -115,7 +123,11 @@ mod tests {
     use crate::core::image_paste::ImageCaps;
 
     fn solid(w: u32, h: u32) -> RawImage {
-        RawImage { width: w, height: h, rgba: vec![200u8; (w * h * 4) as usize] }
+        RawImage {
+            width: w,
+            height: h,
+            rgba: vec![200u8; (w * h * 4) as usize],
+        }
     }
 
     #[test]
@@ -170,7 +182,7 @@ mod tests {
         let pixel = decoded.get_pixel(0, 0);
         assert_eq!(pixel[0], 200, "R channel must be 200, not swapped with B");
         assert_eq!(pixel[1], 100, "G unchanged");
-        assert_eq!(pixel[2], 50,  "B channel must be 50, not swapped with R");
+        assert_eq!(pixel[2], 50, "B channel must be 50, not swapped with R");
         assert_eq!(pixel[3], 255, "A unchanged");
     }
 
@@ -178,7 +190,11 @@ mod tests {
     fn store_writes_png_and_returns_relative_snippet() {
         let dir = tempfile::tempdir().unwrap();
         let base = dir.path().join("attachments").join("ID");
-        let caps = ImageCaps { max_pixels: 4_000_000, max_bytes: 5_242_880, downsample: true };
+        let caps = ImageCaps {
+            max_pixels: 4_000_000,
+            max_bytes: 5_242_880,
+            downsample: true,
+        };
         let snippet = store_pasted_image(&solid(4, 4), caps, "ID", "TS", &base)
             .unwrap()
             .expect("accepted");
@@ -190,9 +206,16 @@ mod tests {
     fn store_rejects_over_byte_cap_returns_none_and_writes_nothing() {
         let dir = tempfile::tempdir().unwrap();
         let base = dir.path().join("attachments").join("ID");
-        let caps = ImageCaps { max_pixels: 4_000_000, max_bytes: 4, downsample: true };
+        let caps = ImageCaps {
+            max_pixels: 4_000_000,
+            max_bytes: 4,
+            downsample: true,
+        };
         let out = store_pasted_image(&solid(4, 4), caps, "ID", "TS", &base).unwrap();
         assert!(out.is_none(), "reject yields None");
-        assert!(!base.join("TS.png").exists(), "rejected image is not written");
+        assert!(
+            !base.join("TS.png").exists(),
+            "rejected image is not written"
+        );
     }
 }

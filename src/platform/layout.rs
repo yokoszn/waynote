@@ -55,9 +55,13 @@ impl Layout {
     /// Store geometry AND collapsed together — writing one without the other
     /// would silently drop the roll-up state on every drag/resize commit.
     pub fn set(&mut self, id: &str, g: Geometry, collapsed: bool) {
-        self.inner
-            .notes
-            .insert(id.to_string(), NoteLayout { geometry: g, collapsed });
+        self.inner.notes.insert(
+            id.to_string(),
+            NoteLayout {
+                geometry: g,
+                collapsed,
+            },
+        );
     }
 
     pub fn remove(&mut self, id: &str) {
@@ -72,7 +76,11 @@ pub fn load(paths: &Paths) -> Layout {
         Ok(b) => b,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Layout::default(),
         Err(e) => {
-            eprintln!("waynote: failed to read layout file {}: {}", path.display(), e);
+            eprintln!(
+                "waynote: failed to read layout file {}: {}",
+                path.display(),
+                e
+            );
             return Layout::default();
         }
     };
@@ -98,9 +106,8 @@ pub fn save(paths: &Paths, layout: &Layout) -> std::io::Result<()> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
     }
-    let text = toml::to_string_pretty(&layout.inner).map_err(|e| {
-        std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string())
-    })?;
+    let text = toml::to_string_pretty(&layout.inner)
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string()))?;
     atomic_write(&path, text.as_bytes())
 }
 

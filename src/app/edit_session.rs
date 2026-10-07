@@ -31,9 +31,7 @@ pub enum KeyMode {
 /// - `editing_surf == Some(idx)` → surface `idx` gets `OnDemand`, all others `None`.
 /// - `editing_surf == None` → all surfaces get `None` (default rest state, per spec §4.4).
 pub fn keyboard_modes(editing_surf: Option<usize>, surf_count: usize) -> Vec<KeyMode> {
-    (0..surf_count)
-        .map(|i| mode_for(i, editing_surf))
-        .collect()
+    (0..surf_count).map(|i| mode_for(i, editing_surf)).collect()
 }
 
 fn mode_for(idx: usize, editing_surf: Option<usize>) -> KeyMode {

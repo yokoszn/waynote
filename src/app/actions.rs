@@ -132,7 +132,9 @@ fn register_id_actions(app: &gtk::Application, ctrl: &Rc<RefCell<Controller>>) {
 fn add_send_to_desktop(app: &gtk::Application, ctrl: Rc<RefCell<Controller>>) {
     let action = gio::SimpleAction::new("send-to-desktop", Some(gtk::glib::VariantTy::STRING));
     action.connect_activate(move |_, param| {
-        let Some(id) = extract_string(param) else { return };
+        let Some(id) = extract_string(param) else {
+            return;
+        };
         Controller::send_to_desktop(&ctrl, &id);
     });
     app.add_action(&action);
@@ -141,7 +143,9 @@ fn add_send_to_desktop(app: &gtk::Application, ctrl: Rc<RefCell<Controller>>) {
 fn add_bring_to_front(app: &gtk::Application, ctrl: Rc<RefCell<Controller>>) {
     let action = gio::SimpleAction::new("bring-to-front", Some(gtk::glib::VariantTy::STRING));
     action.connect_activate(move |_, param| {
-        let Some(id) = extract_string(param) else { return };
+        let Some(id) = extract_string(param) else {
+            return;
+        };
         Controller::bring_to_front(&ctrl, &id);
     });
     app.add_action(&action);
@@ -150,7 +154,9 @@ fn add_bring_to_front(app: &gtk::Application, ctrl: Rc<RefCell<Controller>>) {
 fn add_toggle_pin(app: &gtk::Application, ctrl: Rc<RefCell<Controller>>) {
     let action = gio::SimpleAction::new("toggle-pin", Some(gtk::glib::VariantTy::STRING));
     action.connect_activate(move |_, param| {
-        let Some(id) = extract_string(param) else { return };
+        let Some(id) = extract_string(param) else {
+            return;
+        };
         Controller::toggle_pin(&ctrl, &id);
     });
     app.add_action(&action);
@@ -159,7 +165,9 @@ fn add_toggle_pin(app: &gtk::Application, ctrl: Rc<RefCell<Controller>>) {
 fn add_toggle_lock(app: &gtk::Application, ctrl: Rc<RefCell<Controller>>) {
     let action = gio::SimpleAction::new("toggle-lock", Some(gtk::glib::VariantTy::STRING));
     action.connect_activate(move |_, param| {
-        let Some(id) = extract_string(param) else { return };
+        let Some(id) = extract_string(param) else {
+            return;
+        };
         Controller::toggle_lock(&ctrl, &id);
     });
     app.add_action(&action);
@@ -168,7 +176,9 @@ fn add_toggle_lock(app: &gtk::Application, ctrl: Rc<RefCell<Controller>>) {
 fn add_delete(app: &gtk::Application, ctrl: Rc<RefCell<Controller>>) {
     let action = gio::SimpleAction::new("delete", Some(gtk::glib::VariantTy::STRING));
     action.connect_activate(move |_, param| {
-        let Some(id) = extract_string(param) else { return };
+        let Some(id) = extract_string(param) else {
+            return;
+        };
         if let Err(e) = Controller::delete_to_trash(&ctrl, &id) {
             eprintln!("[waynote] delete action: trash failed for {id}: {e}");
         }
@@ -182,7 +192,9 @@ fn register_set_color(app: &gtk::Application, ctrl: &Rc<RefCell<Controller>>) {
     let ctrl = Rc::clone(ctrl);
     let action = gio::SimpleAction::new("set-color", Some(gtk::glib::VariantTy::STRING));
     action.connect_activate(move |_, param| {
-        let Some(raw) = extract_string(param) else { return };
+        let Some(raw) = extract_string(param) else {
+            return;
+        };
         let Some((id, color)) = split_id_color(&raw) else {
             eprintln!("[waynote] set-color: invalid param {raw:?} — expected \"<id>:<color>\"");
             return;
@@ -198,7 +210,9 @@ fn register_new_note_on(app: &gtk::Application, ctrl: &Rc<RefCell<Controller>>) 
     let ctrl = Rc::clone(ctrl);
     let action = gio::SimpleAction::new("new-note-on", Some(gtk::glib::VariantTy::STRING));
     action.connect_activate(move |_, param| {
-        let Some(connector) = extract_string(param) else { return };
+        let Some(connector) = extract_string(param) else {
+            return;
+        };
         // An empty connector means "no explicit monitor": fall back to the normal
         // pointer → last-used → primary resolution (same as the bare `new-note`).
         let explicit = (!connector.is_empty()).then_some(connector);
@@ -213,9 +227,13 @@ fn register_move_to_monitor(app: &gtk::Application, ctrl: &Rc<RefCell<Controller
     let ctrl = Rc::clone(ctrl);
     let action = gio::SimpleAction::new("move-to-monitor", Some(gtk::glib::VariantTy::STRING));
     action.connect_activate(move |_, param| {
-        let Some(raw) = extract_string(param) else { return };
+        let Some(raw) = extract_string(param) else {
+            return;
+        };
         let Some((id, target)) = split_id_color(&raw) else {
-            eprintln!("[waynote] move-to-monitor: invalid param {raw:?} — expected \"<id>:<target>\"");
+            eprintln!(
+                "[waynote] move-to-monitor: invalid param {raw:?} — expected \"<id>:<target>\""
+            );
             return;
         };
         Controller::move_to_monitor_named(&ctrl, &id.to_string(), target);

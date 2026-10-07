@@ -1,5 +1,5 @@
-use gtk::prelude::*;
 use super::surfaces::Surf;
+use gtk::prelude::*;
 
 /// Invalidate the canvas (and window) so GTK re-snapshots the surface on the
 /// next frame-clock tick.

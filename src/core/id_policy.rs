@@ -57,10 +57,12 @@ fn find_winners(raws: &[RawId]) -> HashMap<String, usize> {
             seen.entry(raw.fm_id).or_default().push(i);
         }
     }
-    seen.into_iter().map(|(id, indices)| {
-        let winner = pick_winner(raws, id, &indices);
-        (id.to_string(), winner)
-    }).collect()
+    seen.into_iter()
+        .map(|(id, indices)| {
+            let winner = pick_winner(raws, id, &indices);
+            (id.to_string(), winner)
+        })
+        .collect()
 }
 
 /// Pick which index wins when multiple files share fm_id.
@@ -81,13 +83,24 @@ fn build_resolved(
     gen: &mut impl IdGen,
 ) -> Vec<Resolved> {
     let winner_indices: HashSet<usize> = winner_by_id.values().copied().collect();
-    raws.iter().enumerate().map(|(i, raw)| {
-        if winner_indices.contains(&i) {
-            Resolved { path_key: raw.path_key.to_string(), id: raw.fm_id.to_string(), assigned: false }
-        } else {
-            Resolved { path_key: raw.path_key.to_string(), id: gen.new_id(), assigned: true }
-        }
-    }).collect()
+    raws.iter()
+        .enumerate()
+        .map(|(i, raw)| {
+            if winner_indices.contains(&i) {
+                Resolved {
+                    path_key: raw.path_key.to_string(),
+                    id: raw.fm_id.to_string(),
+                    assigned: false,
+                }
+            } else {
+                Resolved {
+                    path_key: raw.path_key.to_string(),
+                    id: gen.new_id(),
+                    assigned: true,
+                }
+            }
+        })
+        .collect()
 }
 
 /// ULID validity check (26 chars, Crockford base32 uppercase canonical).
@@ -121,7 +134,9 @@ mod tests {
     }
 
     impl SeqIdGen {
-        fn new() -> Self { SeqIdGen { counter: 0 } }
+        fn new() -> Self {
+            SeqIdGen { counter: 0 }
+        }
     }
 
     impl IdGen for SeqIdGen {
@@ -133,7 +148,11 @@ mod tests {
 
     #[test]
     fn valid_unique_fm_id_is_kept() {
-        let raws = [RawId { path_key: "a.md", fm_id: ID_A, filename_id: Some(ID_A) }];
+        let raws = [RawId {
+            path_key: "a.md",
+            fm_id: ID_A,
+            filename_id: Some(ID_A),
+        }];
         let mut gen = SeqIdGen::new();
         let resolved = resolve(&raws, &mut gen);
         assert_eq!(resolved[0].id, ID_A);
@@ -142,7 +161,11 @@ mod tests {
 
     #[test]
     fn empty_fm_id_gets_new_assigned_id() {
-        let raws = [RawId { path_key: "a.md", fm_id: "", filename_id: None }];
+        let raws = [RawId {
+            path_key: "a.md",
+            fm_id: "",
+            filename_id: None,
+        }];
         let mut gen = SeqIdGen::new();
         let resolved = resolve(&raws, &mut gen);
         assert_eq!(resolved[0].id, "GEN1");
@@ -152,7 +175,11 @@ mod tests {
     #[test]
     fn invalid_fm_id_gets_new_assigned_id() {
         // "nope" is not a valid ULID (wrong length, wrong charset) → assign new.
-        let raws = [RawId { path_key: "a.md", fm_id: "nope", filename_id: None }];
+        let raws = [RawId {
+            path_key: "a.md",
+            fm_id: "nope",
+            filename_id: None,
+        }];
         let mut gen = SeqIdGen::new();
         let resolved = resolve(&raws, &mut gen);
         assert!(resolved[0].assigned);
@@ -161,8 +188,16 @@ mod tests {
     #[test]
     fn duplicate_fm_id_filename_match_wins() {
         let raws = [
-            RawId { path_key: "a.md", fm_id: ID_A, filename_id: Some(ID_A) },
-            RawId { path_key: "b.md", fm_id: ID_A, filename_id: Some(ID_B) },
+            RawId {
+                path_key: "a.md",
+                fm_id: ID_A,
+                filename_id: Some(ID_A),
+            },
+            RawId {
+                path_key: "b.md",
+                fm_id: ID_A,
+                filename_id: Some(ID_B),
+            },
         ];
         let mut gen = SeqIdGen::new();
         let resolved = resolve(&raws, &mut gen);
@@ -178,8 +213,16 @@ mod tests {
     fn duplicate_fm_id_no_filename_match_first_in_order_wins() {
         // Neither filename matches the id; first in input order keeps it.
         let raws = [
-            RawId { path_key: "a.md", fm_id: ID_A, filename_id: Some(ID_B) },
-            RawId { path_key: "b.md", fm_id: ID_A, filename_id: None },
+            RawId {
+                path_key: "a.md",
+                fm_id: ID_A,
+                filename_id: Some(ID_B),
+            },
+            RawId {
+                path_key: "b.md",
+                fm_id: ID_A,
+                filename_id: None,
+            },
         ];
         let mut gen = SeqIdGen::new();
         let resolved = resolve(&raws, &mut gen);

@@ -105,22 +105,44 @@ impl ksni::Tray for WaynoteTray {
         // the whole block is left out, keeping the menu clean.
         let has = self.has_notes.load(std::sync::atomic::Ordering::Relaxed);
 
-        let mut items: Vec<MenuItem<Self>> =
-            vec![item("New note", "document-new", TrayCommand::NewNote), sep()];
+        let mut items: Vec<MenuItem<Self>> = vec![
+            item("New note", "document-new", TrayCommand::NewNote),
+            sep(),
+        ];
 
         if has {
-            items.push(item("Show all", "view-reveal-symbolic", TrayCommand::ShowAll));
-            items.push(item("Hide all", "view-conceal-symbolic", TrayCommand::HideAll));
+            items.push(item(
+                "Show all",
+                "view-reveal-symbolic",
+                TrayCommand::ShowAll,
+            ));
+            items.push(item(
+                "Hide all",
+                "view-conceal-symbolic",
+                TrayCommand::HideAll,
+            ));
             items.push(sep());
-            items.push(item("Send all to back", "go-bottom-symbolic", TrayCommand::SendAllToDesktop));
-            items.push(item("Bring all to front", "go-top-symbolic", TrayCommand::BringAllToFront));
+            items.push(item(
+                "Send all to back",
+                "go-bottom-symbolic",
+                TrayCommand::SendAllToDesktop,
+            ));
+            items.push(item(
+                "Bring all to front",
+                "go-top-symbolic",
+                TrayCommand::BringAllToFront,
+            ));
             // "Send all to monitor →" submenu, one row per monitor (only with >1 monitor).
             if self.monitors.len() > 1 {
                 let rows: Vec<MenuItem<Self>> = self
                     .monitors
                     .iter()
                     .map(|(idx, label)| {
-                        item(label, "video-display-symbolic", TrayCommand::MoveAllToMonitor(*idx))
+                        item(
+                            label,
+                            "video-display-symbolic",
+                            TrayCommand::MoveAllToMonitor(*idx),
+                        )
                     })
                     .collect();
                 items.push(
@@ -144,7 +166,9 @@ impl ksni::Tray for WaynoteTray {
         // every other item, so it stays aligned): a checked vs empty checkbox symbolic.
         // Activation flips the shared flag immediately (so the menu is consistent) and
         // sends it for the GTK thread to persist.
-        let confirm_on = self.confirm_delete.load(std::sync::atomic::Ordering::Relaxed);
+        let confirm_on = self
+            .confirm_delete
+            .load(std::sync::atomic::Ordering::Relaxed);
         items.push(
             StandardItem {
                 label: "Ask before deleting".into(),
@@ -156,7 +180,8 @@ impl ksni::Tray for WaynoteTray {
                 .into(),
                 activate: Box::new(|t: &mut WaynoteTray| {
                     let next = !t.confirm_delete.load(std::sync::atomic::Ordering::Relaxed);
-                    t.confirm_delete.store(next, std::sync::atomic::Ordering::Relaxed);
+                    t.confirm_delete
+                        .store(next, std::sync::atomic::Ordering::Relaxed);
                     let _ = t.tx.send(TrayCommand::SetAskBeforeDelete(next));
                 }),
                 ..Default::default()
@@ -193,10 +218,7 @@ impl TrayHandle {
 ///
 /// Call after actions are registered. The caller must keep the returned
 /// `TrayHandle` alive for the app's lifetime.
-pub fn start_tray(
-    app: &gtk::Application,
-    ctrl: &Rc<RefCell<Controller>>,
-) -> Option<TrayHandle> {
+pub fn start_tray(app: &gtk::Application, ctrl: &Rc<RefCell<Controller>>) -> Option<TrayHandle> {
     use ksni::blocking::TrayMethods;
 
     let (tx, rx) = std::sync::mpsc::channel::<TrayCommand>();
@@ -209,7 +231,12 @@ pub fn start_tray(
     let has_notes = ctrl.borrow().has_notes.clone();
 
     // Spawn ksni on its own thread. Returns Err if no SNI watcher is available.
-    let tray_item = WaynoteTray { tx, monitors, confirm_delete, has_notes };
+    let tray_item = WaynoteTray {
+        tx,
+        monitors,
+        confirm_delete,
+        has_notes,
+    };
     let handle = match tray_item.spawn() {
         Ok(h) => h,
         Err(e) => {
@@ -260,12 +287,18 @@ mod tests {
 
     #[test]
     fn send_all_to_desktop_maps_to_action() {
-        assert_eq!(action_name(TrayCommand::SendAllToDesktop), Some("send-all-to-desktop"));
+        assert_eq!(
+            action_name(TrayCommand::SendAllToDesktop),
+            Some("send-all-to-desktop")
+        );
     }
 
     #[test]
     fn bring_all_to_front_maps_to_action() {
-        assert_eq!(action_name(TrayCommand::BringAllToFront), Some("bring-all-to-front"));
+        assert_eq!(
+            action_name(TrayCommand::BringAllToFront),
+            Some("bring-all-to-front")
+        );
     }
 
     #[test]

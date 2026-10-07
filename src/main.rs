@@ -3,7 +3,7 @@ mod core;
 mod platform;
 
 use gtk::prelude::*;
-use gtk::{Application, CssProvider, gdk::Display, gio, glib};
+use gtk::{gdk::Display, gio, glib, Application, CssProvider};
 
 use platform::surfaces::SurfaceManager;
 
@@ -434,19 +434,31 @@ fn build_render_demo(app: &Application) {
 
     // Yellow card: full element sample
     let yellow_doc = crate::core::markdown::parse(DEMO_MARKDOWN.trim());
-    let yellow_opts = RenderOpts { base_dir: ".".into(), color: "yellow".into(), ..Default::default() };
+    let yellow_opts = RenderOpts {
+        base_dir: ".".into(),
+        color: "yellow".into(),
+        ..Default::default()
+    };
     let yellow_card = render_note(&yellow_doc, &yellow_opts, std::rc::Rc::new(|_| {}));
 
     // Green card: shorter content
     let green_md = "# Green Note\n\nA **green** card with *italic* text.\n\n- [ ] Task one\n- [x] Done task\n\n> A blockquote here.\n";
     let green_doc = crate::core::markdown::parse(green_md);
-    let green_opts = RenderOpts { base_dir: ".".into(), color: "green".into(), ..Default::default() };
+    let green_opts = RenderOpts {
+        base_dir: ".".into(),
+        color: "green".into(),
+        ..Default::default()
+    };
     let green_card = render_note(&green_doc, &green_opts, std::rc::Rc::new(|_| {}));
 
     // Blue card: shorter content
     let blue_md = "# Blue Note\n\nSome `inline code` and a [link](https://example.com).\n\n```rust\nfn main() {}\n```\n";
     let blue_doc = crate::core::markdown::parse(blue_md);
-    let blue_opts = RenderOpts { base_dir: ".".into(), color: "blue".into(), ..Default::default() };
+    let blue_opts = RenderOpts {
+        base_dir: ".".into(),
+        color: "blue".into(),
+        ..Default::default()
+    };
     let blue_card = render_note(&blue_doc, &blue_opts, std::rc::Rc::new(|_| {}));
 
     // Demo-only backdrop so the card drop-shadow reads (real notes sit on the
@@ -510,8 +522,14 @@ mod tests {
     #[test]
     fn app_verbs_parse_to_commands() {
         assert_eq!(parse_cli(&argv(&["new"])), Cli::App(AppCommand::New(None)));
-        assert_eq!(parse_cli(&argv(&["show-all"])), Cli::App(AppCommand::ShowAll));
-        assert_eq!(parse_cli(&argv(&["hide-all"])), Cli::App(AppCommand::HideAll));
+        assert_eq!(
+            parse_cli(&argv(&["show-all"])),
+            Cli::App(AppCommand::ShowAll)
+        );
+        assert_eq!(
+            parse_cli(&argv(&["hide-all"])),
+            Cli::App(AppCommand::HideAll)
+        );
         assert_eq!(parse_cli(&argv(&["toggle"])), Cli::App(AppCommand::Toggle));
     }
 
@@ -546,7 +564,10 @@ mod tests {
 
     #[test]
     fn install_user_assets_subcommand() {
-        assert_eq!(parse_cli(&argv(&["install-user-assets"])), Cli::InstallUserAssets);
+        assert_eq!(
+            parse_cli(&argv(&["install-user-assets"])),
+            Cli::InstallUserAssets
+        );
     }
 
     #[test]

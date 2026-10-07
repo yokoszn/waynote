@@ -1,8 +1,8 @@
 // Consumed by Plan 5 (persistence integration); remove once wired into binary.
 #![allow(dead_code)]
 
-use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 use super::paths::Paths;
 
@@ -149,10 +149,7 @@ mod tests {
         let config = load(&paths);
 
         assert!(config.extra.contains_key("wat"));
-        assert_eq!(
-            config.extra.get("wat").unwrap().as_integer(),
-            Some(1)
-        );
+        assert_eq!(config.extra.get("wat").unwrap().as_integer(), Some(1));
     }
 
     #[test]

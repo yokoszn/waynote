@@ -33,7 +33,9 @@ use super::note_entry::NoteId;
 /// geometry to a live monitor index. Guards against an out-of-range index by
 /// clamping to the last surface rather than panicking in `index_of`.
 pub fn surface_index_for(ctrl: &Controller, id: &NoteId) -> usize {
-    let Some(entry) = ctrl.entries.get(id) else { return 0 };
+    let Some(entry) = ctrl.entries.get(id) else {
+        return 0;
+    };
     let layer = surface_layer_of(&entry.note.layer);
     let monitor_idx = monitor_for(ctrl, id);
     // Clamp to a valid surface in case the monitor count shrank since startup.
@@ -44,7 +46,9 @@ pub fn surface_index_for(ctrl: &Controller, id: &NoteId) -> usize {
 
 /// Resolve the live monitor index for entry `id` using the real resolver.
 pub(crate) fn monitor_for(ctrl: &Controller, id: &NoteId) -> usize {
-    let Some(entry) = ctrl.entries.get(id) else { return 0 };
+    let Some(entry) = ctrl.entries.get(id) else {
+        return 0;
+    };
     if ctrl.monitors.is_empty() {
         return 0;
     }
@@ -63,7 +67,11 @@ fn wanted_for(ctrl: &Controller, surf_idx: usize) -> Vec<(NoteId, Rect, gtk::Wid
         .filter(|(id, e)| !e.hidden && surface_index_for(ctrl, id) == surf_idx)
         .map(|(id, e)| {
             let rect = effective_rect(e, bounds);
-            (id.clone(), rect, e.chrome.root.clone().upcast::<gtk::Widget>())
+            (
+                id.clone(),
+                rect,
+                e.chrome.root.clone().upcast::<gtk::Widget>(),
+            )
         })
         .collect()
 }
@@ -91,7 +99,12 @@ pub(crate) fn effective_rect(entry: &crate::app::note_entry::NoteEntry, bounds: 
     let g = &entry.geometry;
     entry.chrome.set_collapsed(entry.collapsed);
     let (min_w, min_h) = entry.chrome.min_size(g.w);
-    let saved = Rect { x: g.x, y: g.y, w: g.w, h: g.h };
+    let saved = Rect {
+        x: g.x,
+        y: g.y,
+        w: g.w,
+        h: g.h,
+    };
     let fitted = crate::platform::geometry::fit_rect(saved, entry.collapsed, min_w, min_h);
     placement_rect(fitted, bounds)
 }
@@ -203,25 +216,61 @@ mod tests {
     use super::placement_rect;
     use crate::platform::geometry::Rect;
 
-    const MON: Rect = Rect { x: 0, y: 0, w: 1920, h: 1080 };
+    const MON: Rect = Rect {
+        x: 0,
+        y: 0,
+        w: 1920,
+        h: 1080,
+    };
 
     #[test]
     fn placement_rect_keeps_in_bounds_note_unchanged() {
-        let r = Rect { x: 100, y: 100, w: 280, h: 220 };
+        let r = Rect {
+            x: 100,
+            y: 100,
+            w: 280,
+            h: 220,
+        };
         assert_eq!(placement_rect(r, MON), r);
     }
 
     #[test]
     fn placement_rect_pulls_offscreen_right_bottom_back() {
-        let r = Rect { x: 1900, y: 1000, w: 280, h: 220 };
+        let r = Rect {
+            x: 1900,
+            y: 1000,
+            w: 280,
+            h: 220,
+        };
         let c = placement_rect(r, MON);
-        assert_eq!(c, Rect { x: 1920 - 280, y: 1080 - 220, w: 280, h: 220 });
+        assert_eq!(
+            c,
+            Rect {
+                x: 1920 - 280,
+                y: 1080 - 220,
+                w: 280,
+                h: 220
+            }
+        );
     }
 
     #[test]
     fn placement_rect_clamps_negative_to_origin() {
-        let r = Rect { x: -50, y: -30, w: 280, h: 220 };
+        let r = Rect {
+            x: -50,
+            y: -30,
+            w: 280,
+            h: 220,
+        };
         let c = placement_rect(r, MON);
-        assert_eq!(c, Rect { x: 0, y: 0, w: 280, h: 220 });
+        assert_eq!(
+            c,
+            Rect {
+                x: 0,
+                y: 0,
+                w: 280,
+                h: 220
+            }
+        );
     }
 }

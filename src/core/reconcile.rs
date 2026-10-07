@@ -32,8 +32,7 @@ pub fn reconcile(
     scanned: &[Scanned],
     own_writes: &HashSet<String>,
 ) -> Vec<Change> {
-    let known_by_id: HashMap<&str, &Known> =
-        known.iter().map(|k| (k.id.as_str(), k)).collect();
+    let known_by_id: HashMap<&str, &Known> = known.iter().map(|k| (k.id.as_str(), k)).collect();
 
     let mut changes = Vec::new();
 
@@ -79,11 +78,19 @@ mod tests {
     use super::*;
 
     fn known(id: &str, path: &str, hash: &str) -> Known {
-        Known { id: id.to_string(), path: path.to_string(), hash: hash.to_string() }
+        Known {
+            id: id.to_string(),
+            path: path.to_string(),
+            hash: hash.to_string(),
+        }
     }
 
     fn scanned(id: &str, path: &str, hash: &str) -> Scanned {
-        Scanned { id: id.to_string(), path: path.to_string(), hash: hash.to_string() }
+        Scanned {
+            id: id.to_string(),
+            path: path.to_string(),
+            hash: hash.to_string(),
+        }
     }
 
     fn no_own_writes() -> HashSet<String> {
@@ -106,7 +113,11 @@ mod tests {
 
     #[test]
     fn external_new_file_produces_added() {
-        let result = reconcile(&[], &[scanned("id1", "id1-note.md", "hash1")], &no_own_writes());
+        let result = reconcile(
+            &[],
+            &[scanned("id1", "id1-note.md", "hash1")],
+            &no_own_writes(),
+        );
         assert_eq!(result, vec![Change::Added("id1".to_string())]);
     }
 
@@ -132,7 +143,11 @@ mod tests {
 
     #[test]
     fn deletion_produces_removed() {
-        let result = reconcile(&[known("id1", "id1-note.md", "hash1")], &[], &no_own_writes());
+        let result = reconcile(
+            &[known("id1", "id1-note.md", "hash1")],
+            &[],
+            &no_own_writes(),
+        );
         assert_eq!(result, vec![Change::Removed("id1".to_string())]);
     }
 
@@ -145,7 +160,10 @@ mod tests {
         );
         assert_eq!(
             result,
-            vec![Change::Renamed { id: "id1".to_string(), new_path: "id1-new-slug.md".to_string() }]
+            vec![Change::Renamed {
+                id: "id1".to_string(),
+                new_path: "id1-new-slug.md".to_string()
+            }]
         );
     }
 
@@ -170,11 +188,14 @@ mod tests {
             scanned("id-existing", "id-existing.md", "hash-changed"),
         ];
         let result = sorted(reconcile(&known_state, &scan, &no_own_writes()));
-        assert_eq!(result, vec![
-            Change::Added("id-new".to_string()),
-            Change::Modified("id-existing".to_string()),
-            Change::Removed("id-deleted".to_string()),
-        ]);
+        assert_eq!(
+            result,
+            vec![
+                Change::Added("id-new".to_string()),
+                Change::Modified("id-existing".to_string()),
+                Change::Removed("id-deleted".to_string()),
+            ]
+        );
     }
 
     #[test]

@@ -71,7 +71,11 @@ pub fn attachment_markdown(rel: &str) -> String {
 mod tests {
     use super::*;
 
-    const CAPS: ImageCaps = ImageCaps { max_pixels: 4_000_000, max_bytes: 5_242_880, downsample: true };
+    const CAPS: ImageCaps = ImageCaps {
+        max_pixels: 4_000_000,
+        max_bytes: 5_242_880,
+        downsample: true,
+    };
 
     #[test]
     fn within_pixel_and_byte_caps_is_accepted() {
@@ -80,24 +84,36 @@ mod tests {
 
     #[test]
     fn over_byte_cap_is_rejected_even_when_pixels_ok() {
-        assert_eq!(image_action(1000, 1000, 6_000_000, CAPS), ImageAction::Reject);
+        assert_eq!(
+            image_action(1000, 1000, 6_000_000, CAPS),
+            ImageAction::Reject
+        );
     }
 
     #[test]
     fn over_pixel_cap_with_downsample_picks_smallest_factor_that_fits() {
         // 4000*4000 = 16_000_000 px. factor 2 -> 2000*2000 = 4_000_000 <= cap. ok.
-        assert_eq!(image_action(4000, 4000, 1_000, CAPS), ImageAction::Downsample(2));
+        assert_eq!(
+            image_action(4000, 4000, 1_000, CAPS),
+            ImageAction::Downsample(2)
+        );
     }
 
     #[test]
     fn far_over_pixel_cap_picks_larger_factor() {
         // 8000*8000 = 64M. f2 -> 16M (no). f3 -> ~7.1M (no). f4 -> 4M (yes).
-        assert_eq!(image_action(8000, 8000, 1_000, CAPS), ImageAction::Downsample(4));
+        assert_eq!(
+            image_action(8000, 8000, 1_000, CAPS),
+            ImageAction::Downsample(4)
+        );
     }
 
     #[test]
     fn over_pixel_cap_with_downsample_disabled_is_rejected() {
-        let caps = ImageCaps { downsample: false, ..CAPS };
+        let caps = ImageCaps {
+            downsample: false,
+            ..CAPS
+        };
         assert_eq!(image_action(4000, 4000, 1_000, caps), ImageAction::Reject);
     }
 
@@ -129,7 +145,10 @@ mod tests {
         let snippet = attachment_rel_path(id, ts);
         // notes_dir/snippet must equal notes_dir/attachments/<id>/<ts>.png
         let resolved = notes_dir.join(&snippet);
-        let expected = notes_dir.join("attachments").join(id).join(format!("{ts}.png"));
+        let expected = notes_dir
+            .join("attachments")
+            .join(id)
+            .join(format!("{ts}.png"));
         assert_eq!(resolved, expected);
     }
 }

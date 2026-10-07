@@ -19,9 +19,15 @@ pub enum Inline {
 #[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum Block {
-    Heading { level: u8, inlines: Vec<Inline> },
+    Heading {
+        level: u8,
+        inlines: Vec<Inline>,
+    },
     Paragraph(Vec<Inline>),
-    Code { lang: Option<String>, text: String },
+    Code {
+        lang: Option<String>,
+        text: String,
+    },
     Quote(Vec<Block>),
     List(List),
     ThematicBreak,
@@ -71,12 +77,42 @@ pub struct HeadingStyle {
 // stay unmistakably "heading" (the PoC's "all headings identical" bug must not
 // recur; the earlier h5=1.0/h6=0.9 made the small levels read as body).
 const HEADING_STYLES: [HeadingStyle; 6] = [
-    HeadingStyle { scale: 1.70, weight: 800, italic: false, accent: false }, // h1
-    HeadingStyle { scale: 1.50, weight: 800, italic: false, accent: false }, // h2
-    HeadingStyle { scale: 1.30, weight: 700, italic: false, accent: false }, // h3
-    HeadingStyle { scale: 1.18, weight: 700, italic: false, accent: false }, // h4
-    HeadingStyle { scale: 1.10, weight: 700, italic: false, accent: true  }, // h5
-    HeadingStyle { scale: 1.05, weight: 700, italic: true,  accent: true  }, // h6
+    HeadingStyle {
+        scale: 1.70,
+        weight: 800,
+        italic: false,
+        accent: false,
+    }, // h1
+    HeadingStyle {
+        scale: 1.50,
+        weight: 800,
+        italic: false,
+        accent: false,
+    }, // h2
+    HeadingStyle {
+        scale: 1.30,
+        weight: 700,
+        italic: false,
+        accent: false,
+    }, // h3
+    HeadingStyle {
+        scale: 1.18,
+        weight: 700,
+        italic: false,
+        accent: false,
+    }, // h4
+    HeadingStyle {
+        scale: 1.10,
+        weight: 700,
+        italic: false,
+        accent: true,
+    }, // h5
+    HeadingStyle {
+        scale: 1.05,
+        weight: 700,
+        italic: true,
+        accent: true,
+    }, // h6
 ];
 
 /// Per-level style; level is clamped to 1..=6.
@@ -94,7 +130,11 @@ pub fn heading_style(level: u8) -> HeadingStyle {
 pub fn parse(md: &str) -> RenderDoc {
     let opts = Options::ENABLE_TASKLISTS | Options::ENABLE_STRIKETHROUGH;
     let events: Vec<_> = Parser::new_ext(md, opts).into_offset_iter().collect();
-    let mut parser = ParseCtx { events, pos: 0, src: md };
+    let mut parser = ParseCtx {
+        events,
+        pos: 0,
+        src: md,
+    };
     let blocks = parser.parse_blocks(true);
     RenderDoc { blocks }
 }
@@ -152,7 +192,10 @@ impl<'a> ParseCtx<'a> {
                         let mut nl = 0usize;
                         while i > 0 {
                             match bytes[i - 1] {
-                                b'\n' => { nl += 1; i -= 1; }
+                                b'\n' => {
+                                    nl += 1;
+                                    i -= 1;
+                                }
                                 b'\r' | b' ' | b'\t' => i -= 1,
                                 _ => break,
                             }
@@ -185,7 +228,10 @@ impl<'a> ParseCtx<'a> {
                 self.next();
                 let inlines = self.parse_inlines();
                 self.next();
-                Some(Block::Heading { level: lvl, inlines })
+                Some(Block::Heading {
+                    level: lvl,
+                    inlines,
+                })
             }
             Event::Start(Tag::Paragraph) => {
                 self.next();
@@ -193,9 +239,7 @@ impl<'a> ParseCtx<'a> {
                 self.next();
                 Some(Block::Paragraph(inlines))
             }
-            Event::Start(Tag::CodeBlock(_)) => {
-                self.parse_code_block()
-            }
+            Event::Start(Tag::CodeBlock(_)) => self.parse_code_block(),
             Event::Start(Tag::BlockQuote(_)) => {
                 self.next();
                 let inner = self.parse_blocks(false);
@@ -208,7 +252,11 @@ impl<'a> ParseCtx<'a> {
                 self.next();
                 let items = self.parse_list_items();
                 self.next();
-                Some(Block::List(List { ordered, start, items }))
+                Some(Block::List(List {
+                    ordered,
+                    start,
+                    items,
+                }))
             }
             Event::Rule => {
                 self.next();
@@ -266,7 +314,11 @@ impl<'a> ParseCtx<'a> {
             Event::Start(Tag::CodeBlock(kind)) => match kind {
                 pulldown_cmark::CodeBlockKind::Fenced(lang) => {
                     let s = lang.to_string();
-                    if s.is_empty() { None } else { Some(s) }
+                    if s.is_empty() {
+                        None
+                    } else {
+                        Some(s)
+                    }
                 }
                 pulldown_cmark::CodeBlockKind::Indented => None,
             },
@@ -285,7 +337,9 @@ impl<'a> ParseCtx<'a> {
                     self.next();
                     break;
                 }
-                _ => { self.next(); }
+                _ => {
+                    self.next();
+                }
             }
         }
         Some(Block::Code { lang, text })
@@ -303,7 +357,9 @@ impl<'a> ParseCtx<'a> {
                     items.push(ListItem { task, blocks });
                 }
                 Some(Event::End(_)) | None => break,
-                _ => { self.next(); }
+                _ => {
+                    self.next();
+                }
             }
         }
         items
@@ -407,7 +463,9 @@ fn collect_text_until_end(
         match e {
             Event::Start(_) => depth += 1,
             Event::End(t) if *t == end_tag && depth == 0 => break,
-            Event::End(_) => { depth = depth.saturating_sub(1); }
+            Event::End(_) => {
+                depth = depth.saturating_sub(1);
+            }
             Event::Text(s) => text.push_str(s),
             _ => {}
         }
@@ -424,13 +482,18 @@ fn skip_until_end(
     let mut depth = 0usize;
     while *pos < events.len() {
         match &events[*pos].0 {
-            Event::Start(_) => { depth += 1; *pos += 1; }
+            Event::Start(_) => {
+                depth += 1;
+                *pos += 1;
+            }
             Event::End(t) if *t == end_tag && depth == 0 => break,
             Event::End(_) => {
                 depth = depth.saturating_sub(1);
                 *pos += 1;
             }
-            _ => { *pos += 1; }
+            _ => {
+                *pos += 1;
+            }
         }
     }
 }
@@ -531,7 +594,10 @@ mod tests {
         let doc = parse("# H1");
         assert_eq!(
             doc.blocks,
-            vec![Block::Heading { level: 1, inlines: vec![Inline::Text("H1".into())] }]
+            vec![Block::Heading {
+                level: 1,
+                inlines: vec![Inline::Text("H1".into())]
+            }]
         );
     }
 
@@ -540,7 +606,10 @@ mod tests {
         let doc = parse("###### H6");
         assert_eq!(
             doc.blocks,
-            vec![Block::Heading { level: 6, inlines: vec![Inline::Text("H6".into())] }]
+            vec![Block::Heading {
+                level: 6,
+                inlines: vec![Inline::Text("H6".into())]
+            }]
         );
     }
 
@@ -549,7 +618,9 @@ mod tests {
         let doc = parse("**b**");
         assert_eq!(
             doc.blocks,
-            vec![Block::Paragraph(vec![Inline::Strong(vec![Inline::Text("b".into())])])]
+            vec![Block::Paragraph(vec![Inline::Strong(vec![Inline::Text(
+                "b".into()
+            )])])]
         );
     }
 
@@ -558,7 +629,9 @@ mod tests {
         let doc = parse("*i*");
         assert_eq!(
             doc.blocks,
-            vec![Block::Paragraph(vec![Inline::Emphasis(vec![Inline::Text("i".into())])])]
+            vec![Block::Paragraph(vec![Inline::Emphasis(vec![
+                Inline::Text("i".into())
+            ])])]
         );
     }
 
@@ -592,7 +665,9 @@ mod tests {
         let doc = parse("~~s~~");
         assert_eq!(
             doc.blocks,
-            vec![Block::Paragraph(vec![Inline::Strikethrough(vec![Inline::Text("s".into())])])]
+            vec![Block::Paragraph(vec![Inline::Strikethrough(vec![
+                Inline::Text("s".into())
+            ])])]
         );
     }
 
@@ -610,7 +685,10 @@ mod tests {
         let doc = parse("```rust\nx\n```");
         assert_eq!(
             doc.blocks,
-            vec![Block::Code { lang: Some("rust".into()), text: "x\n".into() }]
+            vec![Block::Code {
+                lang: Some("rust".into()),
+                text: "x\n".into()
+            }]
         );
     }
 
@@ -619,7 +697,10 @@ mod tests {
         let doc = parse("    code_here\n");
         assert_eq!(
             doc.blocks,
-            vec![Block::Code { lang: None, text: "code_here\n".into() }]
+            vec![Block::Code {
+                lang: None,
+                text: "code_here\n".into()
+            }]
         );
     }
 
@@ -628,7 +709,9 @@ mod tests {
         let doc = parse("> quote");
         assert_eq!(
             doc.blocks,
-            vec![Block::Quote(vec![Block::Paragraph(vec![Inline::Text("quote".into())])])]
+            vec![Block::Quote(vec![Block::Paragraph(vec![Inline::Text(
+                "quote".into()
+            )])])]
         );
     }
 
@@ -637,7 +720,10 @@ mod tests {
         let doc = parse("> > x");
         match &doc.blocks[0] {
             Block::Quote(inner) => {
-                assert!(matches!(&inner[0], Block::Quote(_)), "should be nested blockquote");
+                assert!(
+                    matches!(&inner[0], Block::Quote(_)),
+                    "should be nested blockquote"
+                );
             }
             _ => panic!("expected blockquote"),
         }
@@ -674,7 +760,10 @@ mod tests {
         match &doc.blocks[0] {
             Block::List(l) => {
                 let outer_item = &l.items[0];
-                let has_nested = outer_item.blocks.iter().any(|b| matches!(b, Block::List(_)));
+                let has_nested = outer_item
+                    .blocks
+                    .iter()
+                    .any(|b| matches!(b, Block::List(_)));
                 assert!(has_nested, "nested list item should contain a List block");
             }
             _ => panic!("expected list"),
@@ -787,7 +876,10 @@ mod tests {
             Block::Paragraph(v) => {
                 assert_eq!(
                     v[0],
-                    Inline::Link { href: "u".into(), children: vec![Inline::Text("t".into())] }
+                    Inline::Link {
+                        href: "u".into(),
+                        children: vec![Inline::Text("t".into())]
+                    }
                 );
             }
             _ => panic!("expected paragraph"),
@@ -799,7 +891,13 @@ mod tests {
         let doc = parse("![a](p.png)");
         match &doc.blocks[0] {
             Block::Paragraph(v) => {
-                assert_eq!(v[0], Inline::Image { dest: "p.png".into(), alt: "a".into() });
+                assert_eq!(
+                    v[0],
+                    Inline::Image {
+                        dest: "p.png".into(),
+                        alt: "a".into()
+                    }
+                );
             }
             _ => panic!("expected paragraph"),
         }
@@ -863,13 +961,21 @@ mod tests {
 
     #[test]
     fn all_six_heading_styles_pairwise_distinct() {
-        let styles: Vec<_> = (1u8..=6).map(|l| {
-            let s = heading_style(l);
-            (s.scale.to_bits(), s.weight, s.italic, s.accent)
-        }).collect();
+        let styles: Vec<_> = (1u8..=6)
+            .map(|l| {
+                let s = heading_style(l);
+                (s.scale.to_bits(), s.weight, s.italic, s.accent)
+            })
+            .collect();
         for i in 0..styles.len() {
             for j in (i + 1)..styles.len() {
-                assert_ne!(styles[i], styles[j], "h{} and h{} styles must differ", i + 1, j + 1);
+                assert_ne!(
+                    styles[i],
+                    styles[j],
+                    "h{} and h{} styles must differ",
+                    i + 1,
+                    j + 1
+                );
             }
         }
     }
@@ -916,18 +1022,12 @@ mod tests {
 
     #[test]
     fn toggle_task_0_unchecked_to_checked() {
-        assert_eq!(
-            toggle_task("- [ ] a\n- [x] b", 0),
-            "- [x] a\n- [x] b"
-        );
+        assert_eq!(toggle_task("- [ ] a\n- [x] b", 0), "- [x] a\n- [x] b");
     }
 
     #[test]
     fn toggle_task_1_checked_to_unchecked() {
-        assert_eq!(
-            toggle_task("- [ ] a\n- [x] b", 1),
-            "- [ ] a\n- [ ] b"
-        );
+        assert_eq!(toggle_task("- [ ] a\n- [x] b", 1), "- [ ] a\n- [ ] b");
     }
 
     #[test]
@@ -939,8 +1039,10 @@ mod tests {
     fn toggle_task_nested_item_by_document_order() {
         let md = "- [ ] outer\n  - [x] inner\n";
         let result = toggle_task(md, 1);
-        assert!(result.contains("- [ ] inner") || result.contains("  - [ ] inner"),
-            "nested task should be toggled: {result}");
+        assert!(
+            result.contains("- [ ] inner") || result.contains("  - [ ] inner"),
+            "nested task should be toggled: {result}"
+        );
     }
 
     #[test]
@@ -953,8 +1055,14 @@ mod tests {
     fn toggle_task_code_block_excluded_real_toggled() {
         let md = "- [ ] real\n\n```\n- [ ] fake\n```\n";
         let result = toggle_task(md, 0);
-        assert!(result.contains("- [x] real"), "real task should be toggled: {result}");
-        assert!(result.contains("- [ ] fake"), "code block task must remain unchanged: {result}");
+        assert!(
+            result.contains("- [x] real"),
+            "real task should be toggled: {result}"
+        );
+        assert!(
+            result.contains("- [ ] fake"),
+            "code block task must remain unchanged: {result}"
+        );
     }
 
     #[test]
@@ -988,12 +1096,18 @@ mod tests {
 
     #[test]
     fn classify_image_local_relative() {
-        assert_eq!(classify_image("a/b.png"), ImageSrc::LocalRelative("a/b.png".into()));
+        assert_eq!(
+            classify_image("a/b.png"),
+            ImageSrc::LocalRelative("a/b.png".into())
+        );
     }
 
     #[test]
     fn classify_image_local_absolute() {
-        assert_eq!(classify_image("/x/y.png"), ImageSrc::LocalAbsolute("/x/y.png".into()));
+        assert_eq!(
+            classify_image("/x/y.png"),
+            ImageSrc::LocalAbsolute("/x/y.png".into())
+        );
     }
 
     #[test]
@@ -1008,7 +1122,10 @@ mod tests {
 
     #[test]
     fn classify_image_data_uri_unsupported() {
-        assert_eq!(classify_image("data:image/png;base64,abc"), ImageSrc::Unsupported);
+        assert_eq!(
+            classify_image("data:image/png;base64,abc"),
+            ImageSrc::Unsupported
+        );
     }
 
     #[test]

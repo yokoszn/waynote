@@ -1,8 +1,8 @@
-use gtk::prelude::*;
-use gtk::gdk::prelude::SurfaceExt;
-use gtk::{Application, ApplicationWindow, Fixed, gdk};
-use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use super::monitors;
+use gtk::gdk::prelude::SurfaceExt;
+use gtk::prelude::*;
+use gtk::{gdk, Application, ApplicationWindow, Fixed};
+use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub enum SurfaceLayer {
